@@ -1,8 +1,8 @@
 module github.com/jbrinkman/archivyr
 
-go 1.25
+go 1.24
 
-toolchain go1.25.3
+toolchain go1.24.3
 
 require github.com/stretchr/testify v1.11.1
 
