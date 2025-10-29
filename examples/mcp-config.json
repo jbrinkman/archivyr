@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "archivyr": {
+      "command": "docker",
+      "args": ["run", "-i", "ghcr.io/joebrinkman/archivyr:latest"],
+      "description": "Centralized ruleset storage and management"
+    }
+  }
+}
