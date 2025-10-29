@@ -248,14 +248,34 @@
   - Document error codes and handling
   - _Requirements: 13.1, 13.5_
 
-- [ ] 24. Create architecture documentation
+- [ ] 24. Consolidate create and update tools into upsert_ruleset
+  - Merge create_ruleset and update_ruleset into a single upsert_ruleset tool
+  - If ruleset exists, update it; if not, create it
+  - All fields (name, description, tags, markdown) should be required for new rulesets
+  - For existing rulesets, only name is required; other fields are optional updates
+  - Update MCP handler to register upsert_ruleset tool
+  - Remove separate create_ruleset and update_ruleset tool registrations
+  - Update all tests to use the new consolidated tool
+  - Update API documentation to reflect the change
+  - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 4.1, 4.2, 4.3_
+
+- [ ] 25. Consolidate list and search tools into search_rulesets
+  - Remove list_rulesets tool (search with "*" pattern provides same functionality)
+  - Make pattern parameter optional in search_rulesets (defaults to "*" for listing all)
+  - Update MCP handler to remove list_rulesets tool registration
+  - Update all tests to use search_rulesets with "*" pattern instead of list_rulesets
+  - Update API documentation to reflect the change
+  - Update examples to show search_rulesets usage for both listing and searching
+  - _Requirements: 5.1, 5.2, 5.3, 6.1, 6.2, 6.3_
+
+- [ ] 26. Create architecture documentation
   - Create docs/ARCHITECTURE.md with detailed component descriptions
   - Include data flow diagrams
   - Document design decisions and rationale
   - Document extension points for future features
   - _Requirements: 13.1, 13.5_
 
-- [ ] 25. Final integration and testing
+- [ ] 27. Final integration and testing
   - Build complete Docker image
   - Test full workflow: start container, create/read/update/delete rulesets, stop container
   - Verify data persistence across container restarts
