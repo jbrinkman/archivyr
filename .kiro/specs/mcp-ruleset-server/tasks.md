@@ -164,7 +164,7 @@
   - Close Valkey connection on shutdown
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 8.1, 8.2, 8.3, 8.4, 8.5_
 
-- [ ] 14. Write integration tests for Valkey operations
+- [x] 14. Write integration tests for Valkey operations
   - Use testcontainers to spin up Valkey instance
   - Test full CRUD workflow against real Valkey
   - Test concurrent operations
