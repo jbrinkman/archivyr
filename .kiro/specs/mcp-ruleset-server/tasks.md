@@ -224,7 +224,7 @@
   - Add step to create GitHub release with generated changelog
   - _Requirements: 11.5, 12.1, 12.2, 12.3, 12.4, 12.5_
 
-- [ ] 21. Create semantic-release configuration
+- [x] 21. Create semantic-release configuration
   - Create .releaserc.json with conventional commits configuration
   - Configure commit analyzer for feat, fix, docs, chore, etc.
   - Configure release notes generator
