@@ -144,3 +144,17 @@ func TestRegisterTools(t *testing.T) {
 		assert.NotNil(t, handler.RegisterTools)
 	})
 }
+
+// Test Start method exists and can be initialized
+func TestStart(t *testing.T) {
+	mockService := new(MockRulesetService)
+	handler := NewHandler(mockService)
+
+	// Verify Start method exists
+	assert.NotNil(t, handler.Start)
+
+	// Note: We cannot fully test Start() in unit tests because:
+	// 1. It's a blocking call that serves stdio
+	// 2. It requires actual stdin/stdout for MCP protocol communication
+	// Full testing of Start() is done in integration tests
+}

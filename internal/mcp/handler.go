@@ -7,11 +7,13 @@ import (
 	"github.com/jbrinkman/archivyr/internal/ruleset"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
+	"github.com/rs/zerolog/log"
 )
 
 // Handler manages MCP protocol interactions for ruleset operations
 type Handler struct {
 	rulesetService ruleset.ServiceInterface
+	server         *server.MCPServer
 }
 
 // NewHandler creates a new MCP handler with the given ruleset service
@@ -19,6 +21,40 @@ func NewHandler(service ruleset.ServiceInterface) *Handler {
 	return &Handler{
 		rulesetService: service,
 	}
+}
+
+// Start initializes the MCP server with stdio transport and starts serving requests
+func (h *Handler) Start() error {
+	log.Info().Msg("Initializing MCP server")
+
+	// Create MCP server with capabilities
+	s := server.NewMCPServer(
+		"MCP Ruleset Server",
+		"1.0.0",
+		server.WithToolCapabilities(true),
+		server.WithResourceCapabilities(true, true),
+		server.WithLogging(),
+	)
+
+	h.server = s
+
+	log.Info().Msg("Registering resources")
+	h.RegisterResources(s)
+
+	log.Info().Msg("Registering tools")
+	h.RegisterTools(s)
+
+	log.Info().Msg("Starting MCP server with stdio transport")
+
+	// Start server with stdio transport
+	// This is a blocking call that handles MCP protocol communication
+	if err := server.ServeStdio(s); err != nil {
+		log.Error().Err(err).Msg("MCP server error")
+		return fmt.Errorf("failed to serve stdio: %w", err)
+	}
+
+	log.Info().Msg("MCP server stopped")
+	return nil
 }
 
 // RegisterResources registers ruleset resources with the MCP server
