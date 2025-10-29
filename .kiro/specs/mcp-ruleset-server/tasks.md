@@ -171,14 +171,14 @@
   - Test connection handling and retries
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
-- [ ] 15. Write integration tests for MCP protocol
+- [x] 15. Write integration tests for MCP protocol
   - Test tool invocations with sample JSON-RPC payloads
   - Test resource retrieval via URI
   - Test error responses format
   - Test stdio transport communication
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
-- [ ] 16. Create Dockerfile with multi-stage build
+- [x] 16. Create Dockerfile with multi-stage build
   - Create Dockerfile in docker/ directory
   - Stage 1: Use golang:1.21-alpine to build Go binary
   - Copy go.mod, go.sum and download dependencies
@@ -189,7 +189,7 @@
   - Set up working directory and permissions
   - _Requirements: 10.1, 10.2, 10.3_
 
-- [ ] 17. Create Docker entrypoint script
+- [x] 17. Create Docker entrypoint script
   - Create docker-entrypoint.sh in docker/ directory
   - Start Valkey server in daemon mode
   - Implement health check loop using valkey-cli ping
@@ -198,7 +198,7 @@
   - Make script executable
   - _Requirements: 10.4, 10.5_
 
-- [ ] 18. Write end-to-end Docker tests
+- [x] 18. Write end-to-end Docker tests
   - Build Docker image in test
   - Start container with testcontainers
   - Test MCP server availability via stdio

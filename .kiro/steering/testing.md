@@ -17,10 +17,13 @@ Before marking ANY task as complete, ALL tests in the project MUST pass. This is
 
 ### Before Task Completion
 
-Run the full test suite before marking a task complete:
+Before marking a task complete, you MUST run both the full test suite AND linting to ensure CI will pass:
+
+**1. Run the full test suite:**
 
 ```bash
-go test ./... -v -race -cover
+task test
+# Or directly: go test ./... -v -race -cover
 ```
 
 All tests must pass with:
@@ -29,15 +32,38 @@ All tests must pass with:
 - No race conditions detected
 - Acceptable code coverage maintained
 
-### Test Failure Protocol
+**2. Run linting checks:**
 
-If tests fail:
+```bash
+task lint
+# Or directly: golangci-lint run
+```
 
-1. **Identify the failure**: Read the test output carefully
-2. **Understand the cause**: Determine if your changes broke existing functionality
+All linting checks must pass with:
+
+- No linting errors
+- No code style violations
+- No static analysis warnings
+
+**Why Both Are Required:**
+
+The CI pipeline runs both tests and linting. If either fails locally, it will fail in CI and block your PR. Always run both before marking a task complete to ensure your code will pass CI checks.
+
+### Test and Lint Failure Protocol
+
+If tests or linting fail:
+
+1. **Identify the failure**: Read the test/lint output carefully
+2. **Understand the cause**: Determine if your changes caused the issue
 3. **Fix the issue**: Update your code or the tests as needed
-4. **Verify the fix**: Re-run all tests to confirm they pass
+4. **Verify the fix**: Re-run both tests AND linting to confirm they pass
 5. **Only then**: Mark the task as complete
+
+For linting failures:
+
+- Use `task lint:fix` to automatically fix many common issues
+- Review remaining issues and fix them manually
+- Never ignore linting warnings - they catch real bugs and maintain code quality
 
 ### No Exceptions
 

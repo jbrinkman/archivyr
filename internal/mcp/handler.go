@@ -70,6 +70,11 @@ func (h *Handler) RegisterResources(s *server.MCPServer) {
 	s.AddResource(resource, h.handleResourceRead)
 }
 
+// HandleResourceRead handles resource read requests for rulesets (exported for testing)
+func (h *Handler) HandleResourceRead(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+	return h.handleResourceRead(ctx, req)
+}
+
 // handleResourceRead handles resource read requests for rulesets
 func (h *Handler) handleResourceRead(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 	// Extract ruleset name from URI
@@ -178,6 +183,11 @@ func (h *Handler) RegisterTools(s *server.MCPServer) {
 	s.AddTool(searchTool, h.handleSearchRulesets)
 }
 
+// HandleCreateRuleset handles the create_ruleset tool invocation (exported for testing)
+func (h *Handler) HandleCreateRuleset(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return h.handleCreateRuleset(ctx, req)
+}
+
 // handleCreateRuleset handles the create_ruleset tool invocation
 func (h *Handler) handleCreateRuleset(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	// Extract required parameters
@@ -215,6 +225,11 @@ func (h *Handler) handleCreateRuleset(ctx context.Context, req mcp.CallToolReque
 	return mcp.NewToolResultText(fmt.Sprintf("Successfully created ruleset '%s'", name)), nil
 }
 
+// HandleGetRuleset handles the get_ruleset tool invocation (exported for testing)
+func (h *Handler) HandleGetRuleset(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return h.handleGetRuleset(ctx, req)
+}
+
 // handleGetRuleset handles the get_ruleset tool invocation
 func (h *Handler) handleGetRuleset(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	// Extract required parameter
@@ -232,6 +247,11 @@ func (h *Handler) handleGetRuleset(ctx context.Context, req mcp.CallToolRequest)
 	// Format response
 	content := formatRulesetAsMarkdown(rs)
 	return mcp.NewToolResultText(content), nil
+}
+
+// HandleUpdateRuleset handles the update_ruleset tool invocation (exported for testing)
+func (h *Handler) HandleUpdateRuleset(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return h.handleUpdateRuleset(ctx, req)
 }
 
 // handleUpdateRuleset handles the update_ruleset tool invocation
@@ -275,6 +295,11 @@ func (h *Handler) handleUpdateRuleset(ctx context.Context, req mcp.CallToolReque
 	return mcp.NewToolResultText(fmt.Sprintf("Successfully updated ruleset '%s'", name)), nil
 }
 
+// HandleDeleteRuleset handles the delete_ruleset tool invocation (exported for testing)
+func (h *Handler) HandleDeleteRuleset(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return h.handleDeleteRuleset(ctx, req)
+}
+
 // handleDeleteRuleset handles the delete_ruleset tool invocation
 func (h *Handler) handleDeleteRuleset(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	// Extract required parameter
@@ -290,6 +315,11 @@ func (h *Handler) handleDeleteRuleset(ctx context.Context, req mcp.CallToolReque
 	}
 
 	return mcp.NewToolResultText(fmt.Sprintf("Successfully deleted ruleset '%s'", name)), nil
+}
+
+// HandleListRulesets handles the list_rulesets tool invocation (exported for testing)
+func (h *Handler) HandleListRulesets(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return h.handleListRulesets(ctx, req)
 }
 
 // handleListRulesets handles the list_rulesets tool invocation
@@ -317,6 +347,11 @@ func (h *Handler) handleListRulesets(ctx context.Context, req mcp.CallToolReques
 	}
 
 	return mcp.NewToolResultText(result), nil
+}
+
+// HandleSearchRulesets handles the search_rulesets tool invocation (exported for testing)
+func (h *Handler) HandleSearchRulesets(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return h.handleSearchRulesets(ctx, req)
 }
 
 // handleSearchRulesets handles the search_rulesets tool invocation

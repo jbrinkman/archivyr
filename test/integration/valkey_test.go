@@ -55,7 +55,7 @@ func TestValkeyIntegration_FullCRUDWorkflow(t *testing.T) {
 	// Create Valkey client
 	client, err := valkey.NewClient(host, port)
 	require.NoError(t, err)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Create ruleset service
 	service := ruleset.NewService(client)
@@ -196,7 +196,7 @@ func TestValkeyIntegration_ConcurrentOperations(t *testing.T) {
 	// Create Valkey client
 	client, err := valkey.NewClient(host, port)
 	require.NoError(t, err)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Create ruleset service
 	service := ruleset.NewService(client)
@@ -368,7 +368,7 @@ func TestValkeyIntegration_ConnectionHandling(t *testing.T) {
 	t.Run("ConnectionReuse", func(t *testing.T) {
 		client, err := valkey.NewClient(host, port)
 		require.NoError(t, err)
-		defer client.Close()
+		defer func() { _ = client.Close() }()
 
 		service := ruleset.NewService(client)
 
@@ -398,7 +398,7 @@ func TestValkeyIntegration_ErrorScenarios(t *testing.T) {
 	// Create Valkey client
 	client, err := valkey.NewClient(host, port)
 	require.NoError(t, err)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Create ruleset service
 	service := ruleset.NewService(client)
@@ -495,12 +495,12 @@ func TestValkeyIntegration_DataPersistence(t *testing.T) {
 	require.NoError(t, err)
 
 	// Close first client
-	client1.Close()
+	_ = client1.Close()
 
 	// Create second client and service
 	client2, err := valkey.NewClient(host, port)
 	require.NoError(t, err)
-	defer client2.Close()
+	defer func() { _ = client2.Close() }()
 
 	service2 := ruleset.NewService(client2)
 
