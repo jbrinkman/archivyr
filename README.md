@@ -50,15 +50,52 @@ Add to your MCP client configuration:
 
 ## Development
 
+This project uses [Task](https://taskfile.dev) for build automation. Install Task first:
+
 ```bash
-# Run tests
-go test ./... -v -race -cover
+# macOS
+brew install go-task
 
-# Run linter
-golangci-lint run
+# Linux
+sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
 
-# Build
-go build -o bin/archivyr ./cmd/mcp-ruleset-server
+# Or install via Go
+go install github.com/go-task/task/v3/cmd/task@latest
+```
+
+### Common Development Tasks
+
+```bash
+# Set up development environment
+task dev:setup
+
+# Run tests (same as CI)
+task test
+
+# Run linter (same as CI)
+task lint
+
+# Build binary
+task build
+
+# Run full CI pipeline locally
+task ci
+
+# See all available tasks
+task
+```
+
+### Quick Development Workflow
+
+```bash
+# Before committing
+task verify                 # Format, lint, and test
+
+# Run tests quickly during development
+task test:quick
+
+# Watch for changes and auto-test (requires entr)
+task dev:watch
 ```
 
 ## Contributing

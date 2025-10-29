@@ -1,0 +1,188 @@
+version: "3"
+
+vars:
+  GO_VERSION: "1.24.3"
+  COVERAGE_FILE: coverage.out
+  DOCKER_IMAGE: mcp-ruleset-server
+  DOCKER_TAG: latest
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  # Development tasks
+  deps:
+    desc: Download Go module dependencies
+    cmds:
+      - go mod download
+      - go mod tidy
+
+  fmt:
+    desc: Format Go code
+    cmds:
+      - go fmt ./...
+
+  # Linting tasks
+  lint:
+    desc: Run golangci-lint (same as CI)
+    cmds:
+      - golangci-lint run --timeout=5m
+
+  lint:fix:
+    desc: Run golangci-lint with auto-fix
+    cmds:
+      - golangci-lint run --timeout=5m --fix
+
+  # Testing tasks
+  test:
+    desc: Run all tests with race detector and coverage (same as CI)
+    cmds:
+      - go test ./... -v -race -coverprofile={{.COVERAGE_FILE}} -covermode=atomic
+
+  test:unit:
+    desc: Run unit tests only
+    cmds:
+      - go test ./internal/... -v -race -cover
+
+  test:integration:
+    desc: Run integration tests
+    cmds:
+      - |
+        if [ -d "./test/integration" ]; then
+          go test ./test/integration/... -v -race
+        else
+          echo "Integration tests directory not found, skipping..."
+        fi
+
+  test:e2e:
+    desc: Run end-to-end tests
+    cmds:
+      - |
+        if [ -d "./test/e2e" ]; then
+          go test ./test/e2e/... -v
+        else
+          echo "E2E tests directory not found, skipping..."
+        fi
+
+  test:coverage:
+    desc: Run tests and generate coverage report
+    cmds:
+      - task: test
+      - go tool cover -html={{.COVERAGE_FILE}} -o coverage.html
+      - echo "Coverage report generated at coverage.html"
+
+  test:quick:
+    desc: Run tests without race detector (faster for development)
+    cmds:
+      - go test ./... -v
+
+  # Build tasks
+  build:
+    desc: Build the application binary
+    cmds:
+      - go build -o bin/mcp-ruleset-server ./cmd/mcp-ruleset-server
+
+  build:all:
+    desc: Build for multiple platforms
+    cmds:
+      - GOOS=linux GOARCH=amd64 go build -o bin/mcp-ruleset-server-linux-amd64 ./cmd/mcp-ruleset-server
+      - GOOS=darwin GOARCH=amd64 go build -o bin/mcp-ruleset-server-darwin-amd64 ./cmd/mcp-ruleset-server
+      - GOOS=darwin GOARCH=arm64 go build -o bin/mcp-ruleset-server-darwin-arm64 ./cmd/mcp-ruleset-server
+      - GOOS=windows GOARCH=amd64 go build -o bin/mcp-ruleset-server-windows-amd64.exe ./cmd/mcp-ruleset-server
+
+  # Docker tasks
+  docker:build:
+    desc: Build Docker image (same as CI)
+    cmds:
+      - docker build -f docker/Dockerfile -t {{.DOCKER_IMAGE}}:{{.DOCKER_TAG}} .
+
+  docker:run:
+    desc: Run Docker container locally
+    cmds:
+      - docker run -i {{.DOCKER_IMAGE}}:{{.DOCKER_TAG}}
+
+  docker:test:
+    desc: Run Docker smoke tests (same as CI)
+    cmds:
+      - task: docker:build
+      - |
+        # Start container in background
+        docker run -d --name mcp-test {{.DOCKER_IMAGE}}:{{.DOCKER_TAG}}
+
+        # Wait for container to initialize
+        sleep 5
+
+        # Check if container is running
+        if ! docker ps | grep -q mcp-test; then
+          echo "Container failed to start"
+          docker logs mcp-test
+          docker rm -f mcp-test 2>/dev/null || true
+          exit 1
+        fi
+
+        # Check container logs for successful startup
+        docker logs mcp-test
+
+        # Cleanup
+        docker stop mcp-test
+        docker rm mcp-test
+
+  # CI simulation tasks
+  ci:
+    desc: Run full CI pipeline locally (lint + test + docker)
+    cmds:
+      - task: lint
+      - task: test
+      - task: test:integration
+      - task: docker:test
+      - task: test:e2e
+
+  ci:quick:
+    desc: Run quick CI checks (lint + unit tests)
+    cmds:
+      - task: lint
+      - task: test:unit
+
+  # Cleanup tasks
+  clean:
+    desc: Clean build artifacts and test cache
+    cmds:
+      - rm -rf bin/
+      - rm -f {{.COVERAGE_FILE}} coverage.html
+      - go clean -testcache
+      - docker rm -f mcp-test 2>/dev/null || true
+
+  clean:all:
+    desc: Clean everything including Docker images
+    cmds:
+      - task: clean
+      - docker rmi {{.DOCKER_IMAGE}}:{{.DOCKER_TAG}} 2>/dev/null || true
+
+  # Verification tasks
+  verify:
+    desc: Verify code is ready for commit (format, lint, test)
+    cmds:
+      - task: fmt
+      - task: lint
+      - task: test:unit
+
+  # Development workflow tasks
+  dev:setup:
+    desc: Set up development environment
+    cmds:
+      - task: deps
+      - echo "Installing golangci-lint..."
+      - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+      - echo "Development environment ready!"
+
+  dev:watch:
+    desc: Watch for changes and run tests (requires entr)
+    cmds:
+      - |
+        if ! command -v entr &> /dev/null; then
+          echo "entr is not installed. Install it with: brew install entr (macOS) or apt-get install entr (Linux)"
+          exit 1
+        fi
+        find . -name '*.go' | entr -c task test:quick

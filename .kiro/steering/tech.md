@@ -26,32 +26,68 @@
 
 ## Build & Development
 
-### Common Commands
+### Task Runner
+
+This project uses [Task](https://taskfile.dev) to standardize build, test, and lint commands. **Always use Task commands instead of direct Go commands** to ensure consistency with CI and avoid skipping important steps.
+
+### Common Task Commands
 
 ```bash
-# Initialize module
-go mod download
+# Show all available tasks
+task
 
-# Run tests
-go test ./... -v -race -cover
+# Development setup
+task dev:setup              # Set up development environment
+task deps                   # Download dependencies
 
-# Run linter
+# Code quality
+task fmt                    # Format code
+task lint                   # Run linter (same as CI)
+task lint:fix               # Run linter with auto-fix
+
+# Testing
+task test                   # Run all tests with race detector and coverage (same as CI)
+task test:unit              # Run unit tests only
+task test:integration       # Run integration tests
+task test:e2e               # Run end-to-end tests
+task test:coverage          # Generate HTML coverage report
+task test:quick             # Run tests without race detector (faster)
+
+# Building
+task build                  # Build binary
+task build:all              # Build for multiple platforms
+
+# Docker
+task docker:build           # Build Docker image
+task docker:run             # Run Docker container
+task docker:test            # Run Docker smoke tests (same as CI)
+
+# CI simulation
+task ci                     # Run full CI pipeline locally
+task ci:quick               # Run quick CI checks (lint + unit tests)
+
+# Verification
+task verify                 # Verify code is ready for commit (format, lint, test)
+
+# Cleanup
+task clean                  # Clean build artifacts
+task clean:all              # Clean everything including Docker images
+```
+
+### Direct Go Commands (Avoid)
+
+While direct Go commands work, they may skip important flags or steps used in CI. Use Task commands instead:
+
+```bash
+# ❌ Don't use these directly
+go test ./...
+go build ./cmd/mcp-ruleset-server
 golangci-lint run
 
-# Build binary
-go build -o bin/mcp-ruleset-server ./cmd/mcp-ruleset-server
-
-# Build Docker image
-docker build -f docker/Dockerfile -t mcp-ruleset-server:latest .
-
-# Run container
-docker run -i mcp-ruleset-server:latest
-
-# Run integration tests
-go test ./test/integration/... -v
-
-# Run e2e tests
-go test ./test/e2e/... -v
+# ✅ Use Task commands instead
+task test
+task build
+task lint
 ```
 
 ## CI/CD
