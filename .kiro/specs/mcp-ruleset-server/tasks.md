@@ -117,7 +117,7 @@
   - Test deletion of non-existent ruleset
   - _Requirements: 7.1, 7.2, 7.3, 7.4_
 
-- [ ] 10. Implement MCP resource handler
+- [x] 10. Implement MCP resource handler
   - Create Handler struct in internal/mcp package with ruleset service dependency
   - Implement RegisterResources() to register ruleset resources with URI scheme "ruleset://{name}"
   - Implement resource handler function to call service.Get() for exact name matches
