@@ -232,7 +232,7 @@
   - Configure Git assets and tagging
   - _Requirements: 12.1, 12.2, 12.5_
 
-- [ ] 22. Create project documentation
+- [x] 22. Create project documentation
   - Create README.md with project overview, quick start, Docker usage, and MCP client configuration examples
   - Create CONTRIBUTING.md with conventional commit guidelines and development workflow
   - Create LICENSE file (choose appropriate license)
@@ -240,7 +240,7 @@
   - Create examples/sample-rulesets/ with example ruleset markdown files
   - _Requirements: 13.1, 13.2, 13.4, 13.5_
 
-- [ ] 23. Create API documentation
+- [x] 23. Create API documentation
   - Create docs/API.md with complete MCP tool reference
   - Document all tool parameters and return values
   - Document resource URI schemes
