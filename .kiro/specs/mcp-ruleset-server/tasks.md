@@ -256,7 +256,12 @@
   - Update MCP handler to register upsert_ruleset tool
   - Remove separate create_ruleset and update_ruleset tool registrations
   - Update all tests to use the new consolidated tool
-  - Update API documentation to reflect the change
+  - Update API documentation (docs/API.md) to:
+    - Document upsert_ruleset with both create and update use cases
+    - Show example for creating a new ruleset (all fields provided)
+    - Show example for updating an existing ruleset (only changed fields provided)
+    - Explain the automatic detection behavior
+  - Update README.md usage examples to show both create and update scenarios
   - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 4.1, 4.2, 4.3_
 
 - [ ] 25. Consolidate list and search tools into search_rulesets
@@ -264,8 +269,13 @@
   - Make pattern parameter optional in search_rulesets (defaults to "*" for listing all)
   - Update MCP handler to remove list_rulesets tool registration
   - Update all tests to use search_rulesets with "*" pattern instead of list_rulesets
-  - Update API documentation to reflect the change
-  - Update examples to show search_rulesets usage for both listing and searching
+  - Update API documentation (docs/API.md) to:
+    - Document search_rulesets with both listing and searching use cases
+    - Show example for listing all rulesets (no pattern or pattern="*")
+    - Show example for searching with specific patterns (e.g., "_python_", "style_*")
+    - Explain that omitting pattern defaults to "*" for listing all
+  - Update README.md usage examples to show both listing and searching scenarios
+  - Update examples/README.md with clear examples of both use cases
   - _Requirements: 5.1, 5.2, 5.3, 6.1, 6.2, 6.3_
 
 - [ ] 26. Create architecture documentation
