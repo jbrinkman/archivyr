@@ -14,21 +14,15 @@ Signed-off-by: Your Name <your.email@example.com>
 
 ### How to Add Signoffs
 
-#### Automatic Signoff (Recommended)
+#### Automatic Signoff (Required)
 
-Always use the `--signoff` or `-s` flag when committing:
+ALWAYS use the `--signoff` or `-s` flag when committing:
 
 ```bash
 git commit -s -m "Your commit message"
 ```
 
-#### Configure Git to Always Signoff
-
-Set up Git to automatically add signoffs to all commits:
-
-```bash
-git config --global format.signOff true
-```
+The `-s` flag automatically adds the signoff line using your configured git user.name and user.email. No additional commands are needed.
 
 #### Amend Missing Signoffs
 
