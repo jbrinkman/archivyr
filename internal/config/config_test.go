@@ -10,9 +10,9 @@ import (
 
 func TestLoadConfig_WithDefaults(t *testing.T) {
 	// Clear environment variables
-	os.Unsetenv("VALKEY_HOST")
-	os.Unsetenv("VALKEY_PORT")
-	os.Unsetenv("LOG_LEVEL")
+	_ = os.Unsetenv("VALKEY_HOST")
+	_ = os.Unsetenv("VALKEY_PORT")
+	_ = os.Unsetenv("LOG_LEVEL")
 
 	config := LoadConfig()
 
@@ -23,13 +23,13 @@ func TestLoadConfig_WithDefaults(t *testing.T) {
 
 func TestLoadConfig_WithEnvironmentVariables(t *testing.T) {
 	// Set environment variables
-	os.Setenv("VALKEY_HOST", "valkey.example.com")
-	os.Setenv("VALKEY_PORT", "7000")
-	os.Setenv("LOG_LEVEL", "debug")
+	require.NoError(t, os.Setenv("VALKEY_HOST", "valkey.example.com"))
+	require.NoError(t, os.Setenv("VALKEY_PORT", "7000"))
+	require.NoError(t, os.Setenv("LOG_LEVEL", "debug"))
 	defer func() {
-		os.Unsetenv("VALKEY_HOST")
-		os.Unsetenv("VALKEY_PORT")
-		os.Unsetenv("LOG_LEVEL")
+		_ = os.Unsetenv("VALKEY_HOST")
+		_ = os.Unsetenv("VALKEY_PORT")
+		_ = os.Unsetenv("LOG_LEVEL")
 	}()
 
 	config := LoadConfig()
@@ -41,8 +41,10 @@ func TestLoadConfig_WithEnvironmentVariables(t *testing.T) {
 
 func TestLoadConfig_PartialEnvironmentVariables(t *testing.T) {
 	// Set only some environment variables
-	os.Setenv("VALKEY_HOST", "custom-host")
-	defer os.Unsetenv("VALKEY_HOST")
+	require.NoError(t, os.Setenv("VALKEY_HOST", "custom-host"))
+	defer func() {
+		_ = os.Unsetenv("VALKEY_HOST")
+	}()
 
 	config := LoadConfig()
 
@@ -177,23 +179,27 @@ func TestValidate_InvalidLogLevel(t *testing.T) {
 
 func TestGetEnvOrDefault(t *testing.T) {
 	t.Run("returns environment variable when set", func(t *testing.T) {
-		os.Setenv("TEST_VAR", "test_value")
-		defer os.Unsetenv("TEST_VAR")
+		require.NoError(t, os.Setenv("TEST_VAR", "test_value"))
+		defer func() {
+			_ = os.Unsetenv("TEST_VAR")
+		}()
 
 		result := getEnvOrDefault("TEST_VAR", "default")
 		assert.Equal(t, "test_value", result)
 	})
 
 	t.Run("returns default when environment variable not set", func(t *testing.T) {
-		os.Unsetenv("TEST_VAR")
+		_ = os.Unsetenv("TEST_VAR")
 
 		result := getEnvOrDefault("TEST_VAR", "default")
 		assert.Equal(t, "default", result)
 	})
 
 	t.Run("returns default when environment variable is empty", func(t *testing.T) {
-		os.Setenv("TEST_VAR", "")
-		defer os.Unsetenv("TEST_VAR")
+		require.NoError(t, os.Setenv("TEST_VAR", ""))
+		defer func() {
+			_ = os.Unsetenv("TEST_VAR")
+		}()
 
 		result := getEnvOrDefault("TEST_VAR", "default")
 		assert.Equal(t, "default", result)
