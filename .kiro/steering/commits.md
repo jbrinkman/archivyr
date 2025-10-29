@@ -4,14 +4,6 @@
 
 All commits to this repository MUST include a Developer Certificate of Origin (DCO) signoff. This is a requirement for contributing to the Valkey project and ensures legal compliance.
 
-### Required Signoff Format
-
-Every commit message must end with a signoff line in the following format:
-
-```
-Signed-off-by: Your Name <your.email@example.com>
-```
-
 ### How to Add Signoffs
 
 #### Automatic Signoff (Required)

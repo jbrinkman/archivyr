@@ -58,7 +58,7 @@
   - Test timestamp formatting and parsing
   - _Requirements: 1.2_
 
-- [ ] 6. Implement ruleset service - Create operation
+- [x] 6. Implement ruleset service - Create operation
   - Create Service struct in internal/ruleset with Valkey client dependency
   - Implement NewService constructor
   - Implement Exists(name string) to check if ruleset exists using Valkey EXISTS command
@@ -69,7 +69,7 @@
   - Return error with existing names list if duplicate detected
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 1.1, 1.2, 1.3_
 
-- [ ] 6.1 Write unit tests for Create operation
+- [x] 6.1 Write unit tests for Create operation
   - Test successful creation
   - Test duplicate name detection and error response
   - Test timestamp setting
