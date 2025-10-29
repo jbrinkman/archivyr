@@ -126,3 +126,174 @@ func (s *Service) Create(ruleset *Ruleset) error {
 
 	return nil
 }
+
+// Get retrieves a ruleset by exact name from Valkey
+func (s *Service) Get(name string) (*Ruleset, error) {
+	// Validate ruleset name
+	if err := util.ValidateRulesetName(name); err != nil {
+		return nil, err
+	}
+
+	key := fmt.Sprintf("ruleset:%s", name)
+	ctx := s.valkeyClient.GetContext()
+	client := s.valkeyClient.GetClient()
+
+	// Retrieve all hash fields
+	result, err := client.HGetAll(ctx, key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve ruleset: %w", err)
+	}
+
+	// Check if ruleset exists (empty result means key doesn't exist)
+	if len(result) == 0 {
+		return nil, fmt.Errorf("ruleset '%s' not found", name)
+	}
+
+	// Parse hash fields into Ruleset struct
+	ruleset := &Ruleset{
+		Name: name,
+	}
+
+	// Extract and parse fields
+	if desc, ok := result["description"]; ok {
+		ruleset.Description = desc
+	}
+
+	if tagsJSON, ok := result["tags"]; ok {
+		var tags []string
+		if err := json.Unmarshal([]byte(tagsJSON), &tags); err != nil {
+			return nil, fmt.Errorf("failed to parse tags: %w", err)
+		}
+		ruleset.Tags = tags
+	}
+
+	if markdown, ok := result["markdown"]; ok {
+		ruleset.Markdown = markdown
+	}
+
+	if createdAtStr, ok := result["created_at"]; ok {
+		createdAt, err := util.ParseTimestamp(createdAtStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse created_at: %w", err)
+		}
+		ruleset.CreatedAt = createdAt
+	}
+
+	if lastModifiedStr, ok := result["last_modified"]; ok {
+		lastModified, err := util.ParseTimestamp(lastModifiedStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse last_modified: %w", err)
+		}
+		ruleset.LastModified = lastModified
+	}
+
+	return ruleset, nil
+}
+
+// List retrieves all rulesets with metadata from Valkey
+func (s *Service) List() ([]*Ruleset, error) {
+	// Get all ruleset names
+	names, err := s.ListNames()
+	if err != nil {
+		return nil, err
+	}
+
+	// Retrieve each ruleset
+	rulesets := make([]*Ruleset, 0, len(names))
+	for _, name := range names {
+		ruleset, err := s.Get(name)
+		if err != nil {
+			// Skip rulesets that can't be retrieved (shouldn't happen, but be defensive)
+			continue
+		}
+		rulesets = append(rulesets, ruleset)
+	}
+
+	return rulesets, nil
+}
+
+// Search searches for rulesets matching a glob pattern
+func (s *Service) Search(pattern string) ([]*Ruleset, error) {
+	if pattern == "" {
+		return nil, fmt.Errorf("search pattern cannot be empty")
+	}
+
+	ctx := s.valkeyClient.GetContext()
+	client := s.valkeyClient.GetClient()
+
+	// Build the full key pattern for KEYS command
+	keyPattern := fmt.Sprintf("ruleset:%s", pattern)
+
+	// Use SCAN with pattern matching
+	cursor := models.NewCursor()
+	matchingNames := make([]string, 0)
+
+	for {
+		result, err := client.Scan(ctx, cursor)
+		if err != nil {
+			return nil, fmt.Errorf("failed to search rulesets: %w", err)
+		}
+
+		// Filter keys that match our pattern and extract names
+		for _, key := range result.Data {
+			if len(key) > 8 && key[:8] == "ruleset:" {
+				// Simple pattern matching - check if key matches the pattern
+				if matchesPattern(key, keyPattern) {
+					name := key[8:]
+					matchingNames = append(matchingNames, name)
+				}
+			}
+		}
+
+		cursor = result.Cursor
+		if cursor.IsFinished() {
+			break
+		}
+	}
+
+	// Retrieve full rulesets for matching names
+	rulesets := make([]*Ruleset, 0, len(matchingNames))
+	for _, name := range matchingNames {
+		ruleset, err := s.Get(name)
+		if err != nil {
+			// Skip rulesets that can't be retrieved
+			continue
+		}
+		rulesets = append(rulesets, ruleset)
+	}
+
+	return rulesets, nil
+}
+
+// matchesPattern performs simple glob pattern matching
+// Supports * (any characters) and ? (single character)
+func matchesPattern(text, pattern string) bool {
+	// Simple implementation for basic glob patterns
+	// This is a basic version - for production, consider using filepath.Match or similar
+
+	i, j := 0, 0
+	starIdx, matchIdx := -1, 0
+
+	for i < len(text) {
+		if j < len(pattern) && (pattern[j] == '?' || pattern[j] == text[i]) {
+			i++
+			j++
+		} else if j < len(pattern) && pattern[j] == '*' {
+			starIdx = j
+			matchIdx = i
+			j++
+		} else if starIdx != -1 {
+			j = starIdx + 1
+			matchIdx++
+			i = matchIdx
+		} else {
+			return false
+		}
+	}
+
+	for j < len(pattern) && pattern[j] == '*' {
+		j++
+	}
+
+	return j == len(pattern)
+}

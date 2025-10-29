@@ -2,6 +2,7 @@ package ruleset
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -220,4 +221,283 @@ func TestListNames(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, names, 3)
 	assert.ElementsMatch(t, rulesets, names)
+}
+
+func TestGet_Success(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Create a ruleset first
+	ruleset := &Ruleset{
+		Name:        "get_test",
+		Description: "Test ruleset for Get",
+		Tags:        []string{"test", "get"},
+		Markdown:    "# Get Test\n\nThis is a test for Get operation.",
+	}
+
+	err := service.Create(ruleset)
+	require.NoError(t, err)
+
+	// Retrieve the ruleset
+	retrieved, err := service.Get("get_test")
+	require.NoError(t, err)
+	assert.NotNil(t, retrieved)
+
+	// Verify all fields
+	assert.Equal(t, "get_test", retrieved.Name)
+	assert.Equal(t, "Test ruleset for Get", retrieved.Description)
+	assert.Equal(t, []string{"test", "get"}, retrieved.Tags)
+	assert.Equal(t, "# Get Test\n\nThis is a test for Get operation.", retrieved.Markdown)
+	assert.False(t, retrieved.CreatedAt.IsZero())
+	assert.False(t, retrieved.LastModified.IsZero())
+}
+
+func TestGet_NotFound(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Try to get non-existent ruleset
+	retrieved, err := service.Get("nonexistent_ruleset")
+	require.Error(t, err)
+	assert.Nil(t, retrieved)
+	assert.Contains(t, err.Error(), "not found")
+}
+
+func TestGet_InvalidName(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Try to get with invalid name
+	retrieved, err := service.Get("Invalid-Name")
+	require.Error(t, err)
+	assert.Nil(t, retrieved)
+}
+
+func TestList_Empty(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// List when no rulesets exist
+	rulesets, err := service.List()
+	require.NoError(t, err)
+	assert.Empty(t, rulesets)
+}
+
+func TestList_WithRulesets(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Create multiple rulesets
+	testRulesets := []*Ruleset{
+		{
+			Name:        "list_test_one",
+			Description: "First test ruleset",
+			Tags:        []string{"test", "one"},
+			Markdown:    "# First",
+		},
+		{
+			Name:        "list_test_two",
+			Description: "Second test ruleset",
+			Tags:        []string{"test", "two"},
+			Markdown:    "# Second",
+		},
+		{
+			Name:        "list_test_three",
+			Description: "Third test ruleset",
+			Tags:        []string{"test", "three"},
+			Markdown:    "# Third",
+		},
+	}
+
+	for _, rs := range testRulesets {
+		err := service.Create(rs)
+		require.NoError(t, err)
+	}
+
+	// List all rulesets
+	rulesets, err := service.List()
+	require.NoError(t, err)
+	assert.Len(t, rulesets, 3)
+
+	// Verify all rulesets are present
+	names := make([]string, len(rulesets))
+	for i, rs := range rulesets {
+		names[i] = rs.Name
+	}
+	assert.ElementsMatch(t, []string{"list_test_one", "list_test_two", "list_test_three"}, names)
+
+	// Verify metadata is included
+	for _, rs := range rulesets {
+		assert.NotEmpty(t, rs.Description)
+		assert.NotEmpty(t, rs.Tags)
+		assert.NotEmpty(t, rs.Markdown)
+		assert.False(t, rs.CreatedAt.IsZero())
+		assert.False(t, rs.LastModified.IsZero())
+	}
+}
+
+func TestSearch_WithWildcard(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Create rulesets with different patterns
+	testRulesets := []*Ruleset{
+		{
+			Name:        "python_style_guide",
+			Description: "Python style guide",
+			Tags:        []string{"python", "style"},
+			Markdown:    "# Python Style",
+		},
+		{
+			Name:        "python_testing_guide",
+			Description: "Python testing guide",
+			Tags:        []string{"python", "testing"},
+			Markdown:    "# Python Testing",
+		},
+		{
+			Name:        "javascript_style_guide",
+			Description: "JavaScript style guide",
+			Tags:        []string{"javascript", "style"},
+			Markdown:    "# JavaScript Style",
+		},
+		{
+			Name:        "go_conventions",
+			Description: "Go conventions",
+			Tags:        []string{"go", "conventions"},
+			Markdown:    "# Go Conventions",
+		},
+	}
+
+	for _, rs := range testRulesets {
+		err := service.Create(rs)
+		require.NoError(t, err)
+	}
+
+	// Search for python rulesets
+	results, err := service.Search("python*")
+	require.NoError(t, err)
+	assert.Len(t, results, 2)
+
+	names := make([]string, len(results))
+	for i, rs := range results {
+		names[i] = rs.Name
+	}
+	assert.ElementsMatch(t, []string{"python_style_guide", "python_testing_guide"}, names)
+}
+
+func TestSearch_WithSuffix(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Create rulesets
+	testRulesets := []*Ruleset{
+		{
+			Name:        "python_style_guide",
+			Description: "Python style guide",
+			Tags:        []string{"python"},
+			Markdown:    "# Python",
+		},
+		{
+			Name:        "javascript_style_guide",
+			Description: "JavaScript style guide",
+			Tags:        []string{"javascript"},
+			Markdown:    "# JavaScript",
+		},
+		{
+			Name:        "go_conventions",
+			Description: "Go conventions",
+			Tags:        []string{"go"},
+			Markdown:    "# Go",
+		},
+	}
+
+	for _, rs := range testRulesets {
+		err := service.Create(rs)
+		require.NoError(t, err)
+	}
+
+	// Search for style guides
+	results, err := service.Search("*_style_guide")
+	require.NoError(t, err)
+	assert.Len(t, results, 2)
+
+	names := make([]string, len(results))
+	for i, rs := range results {
+		names[i] = rs.Name
+	}
+	assert.ElementsMatch(t, []string{"python_style_guide", "javascript_style_guide"}, names)
+}
+
+func TestSearch_NoMatches(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Create a ruleset
+	ruleset := &Ruleset{
+		Name:        "test_ruleset",
+		Description: "Test",
+		Tags:        []string{"test"},
+		Markdown:    "# Test",
+	}
+
+	err := service.Create(ruleset)
+	require.NoError(t, err)
+
+	// Search with pattern that doesn't match
+	results, err := service.Search("nonexistent*")
+	require.NoError(t, err)
+	assert.Empty(t, results)
+}
+
+func TestSearch_EmptyPattern(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Search with empty pattern
+	results, err := service.Search("")
+	require.Error(t, err)
+	assert.Nil(t, results)
+	assert.Contains(t, err.Error(), "pattern cannot be empty")
+}
+
+func TestSearch_AllRulesets(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Create multiple rulesets
+	for i := 1; i <= 3; i++ {
+		ruleset := &Ruleset{
+			Name:        fmt.Sprintf("ruleset_%d", i),
+			Description: fmt.Sprintf("Ruleset %d", i),
+			Tags:        []string{"test"},
+			Markdown:    fmt.Sprintf("# Ruleset %d", i),
+		}
+		err := service.Create(ruleset)
+		require.NoError(t, err)
+	}
+
+	// Search with wildcard to get all
+	results, err := service.Search("*")
+	require.NoError(t, err)
+	assert.Len(t, results, 3)
 }

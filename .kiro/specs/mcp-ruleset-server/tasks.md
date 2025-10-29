@@ -75,7 +75,7 @@
   - Test timestamp setting
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [ ] 7. Implement ruleset service - Read operations
+- [x] 7. Implement ruleset service - Read operations
   - Implement Get(name string) to retrieve ruleset by exact name using HGETALL
   - Parse hash fields back into Ruleset struct
   - Return error if ruleset not found
@@ -83,7 +83,7 @@
   - Implement Search(pattern string) for glob pattern matching using KEYS with pattern
   - _Requirements: 3.1, 3.2, 3.3, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3_
 
-- [ ] 7.1 Write unit tests for Read operations
+- [x] 7.1 Write unit tests for Read operations
   - Test Get with existing and non-existent rulesets
   - Test List with empty and populated store
   - Test Search with various patterns
