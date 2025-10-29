@@ -265,6 +265,64 @@ func (s *Service) Search(pattern string) ([]*Ruleset, error) {
 	return rulesets, nil
 }
 
+// Update updates an existing ruleset with the provided fields
+func (s *Service) Update(name string, updates *RulesetUpdate) error {
+	// Validate ruleset name
+	if err := util.ValidateRulesetName(name); err != nil {
+		return err
+	}
+
+	// Check if ruleset exists
+	exists, err := s.Exists(name)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return fmt.Errorf("ruleset '%s' not found", name)
+	}
+
+	// Prepare fields to update
+	key := fmt.Sprintf("ruleset:%s", name)
+	ctx := s.valkeyClient.GetContext()
+	client := s.valkeyClient.GetClient()
+
+	fields := make(map[string]string)
+
+	// Update only provided fields
+	if updates.Description != nil {
+		fields["description"] = *updates.Description
+	}
+
+	if updates.Tags != nil {
+		tagsJSON, err := json.Marshal(*updates.Tags)
+		if err != nil {
+			return fmt.Errorf("failed to encode tags: %w", err)
+		}
+		fields["tags"] = string(tagsJSON)
+	}
+
+	if updates.Markdown != nil {
+		fields["markdown"] = *updates.Markdown
+	}
+
+	// Always update last_modified timestamp
+	fields["last_modified"] = util.FormatTimestamp(time.Now())
+
+	// If no fields to update, return early
+	if len(fields) == 1 { // Only last_modified
+		return nil
+	}
+
+	// Update the hash in Valkey
+	_, err = client.HSet(ctx, key, fields)
+	if err != nil {
+		return fmt.Errorf("failed to update ruleset: %w", err)
+	}
+
+	return nil
+}
+
 // matchesPattern performs simple glob pattern matching
 // Supports * (any characters) and ? (single character)
 func matchesPattern(text, pattern string) bool {

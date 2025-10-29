@@ -89,7 +89,7 @@
   - Test Search with various patterns
   - _Requirements: 3.1, 3.2, 3.3, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3_
 
-- [ ] 8. Implement ruleset service - Update operation
+- [x] 8. Implement ruleset service - Update operation
   - Implement Update(name string, updates *RulesetUpdate) to modify existing rulesets
   - Check if ruleset exists before updating
   - Update only provided fields (description, tags, markdown)
@@ -97,7 +97,7 @@
   - Return error if ruleset not found
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 8.1 Write unit tests for Update operation
+- [x] 8.1 Write unit tests for Update operation
   - Test successful update of each field
   - Test partial updates
   - Test timestamp handling

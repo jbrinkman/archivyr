@@ -501,3 +501,322 @@ func TestSearch_AllRulesets(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, results, 3)
 }
+
+func TestUpdate_SuccessfulDescriptionUpdate(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Create a ruleset
+	ruleset := &Ruleset{
+		Name:        "update_test",
+		Description: "Original description",
+		Tags:        []string{"test"},
+		Markdown:    "# Original",
+	}
+
+	err := service.Create(ruleset)
+	require.NoError(t, err)
+
+	originalCreatedAt := ruleset.CreatedAt
+	originalLastModified := ruleset.LastModified
+	time.Sleep(100 * time.Millisecond) // Ensure timestamp difference
+
+	// Update description
+	newDescription := "Updated description"
+	updates := &RulesetUpdate{
+		Description: &newDescription,
+	}
+
+	err = service.Update("update_test", updates)
+	require.NoError(t, err)
+
+	// Verify update
+	updated, err := service.Get("update_test")
+	require.NoError(t, err)
+	assert.Equal(t, "Updated description", updated.Description)
+	assert.Equal(t, []string{"test"}, updated.Tags) // Unchanged
+	assert.Equal(t, "# Original", updated.Markdown) // Unchanged
+	assert.Equal(t, originalCreatedAt.Unix(), updated.CreatedAt.Unix())
+	// last_modified should be >= original (may be same second due to RFC3339 precision)
+	assert.True(t, updated.LastModified.Unix() >= originalLastModified.Unix())
+}
+
+func TestUpdate_SuccessfulTagsUpdate(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Create a ruleset
+	ruleset := &Ruleset{
+		Name:        "tags_update_test",
+		Description: "Test description",
+		Tags:        []string{"old", "tags"},
+		Markdown:    "# Test",
+	}
+
+	err := service.Create(ruleset)
+	require.NoError(t, err)
+
+	originalCreatedAt := ruleset.CreatedAt
+	originalLastModified := ruleset.LastModified
+	time.Sleep(100 * time.Millisecond)
+
+	// Update tags
+	newTags := []string{"new", "updated", "tags"}
+	updates := &RulesetUpdate{
+		Tags: &newTags,
+	}
+
+	err = service.Update("tags_update_test", updates)
+	require.NoError(t, err)
+
+	// Verify update
+	updated, err := service.Get("tags_update_test")
+	require.NoError(t, err)
+	assert.Equal(t, "Test description", updated.Description) // Unchanged
+	assert.Equal(t, []string{"new", "updated", "tags"}, updated.Tags)
+	assert.Equal(t, "# Test", updated.Markdown) // Unchanged
+	assert.Equal(t, originalCreatedAt.Unix(), updated.CreatedAt.Unix())
+	// last_modified should be >= original (may be same second due to RFC3339 precision)
+	assert.True(t, updated.LastModified.Unix() >= originalLastModified.Unix())
+}
+
+func TestUpdate_SuccessfulMarkdownUpdate(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Create a ruleset
+	ruleset := &Ruleset{
+		Name:        "markdown_update_test",
+		Description: "Test description",
+		Tags:        []string{"test"},
+		Markdown:    "# Original Content",
+	}
+
+	err := service.Create(ruleset)
+	require.NoError(t, err)
+
+	originalCreatedAt := ruleset.CreatedAt
+	originalLastModified := ruleset.LastModified
+	time.Sleep(100 * time.Millisecond)
+
+	// Update markdown
+	newMarkdown := "# Updated Content\n\nThis is the new content."
+	updates := &RulesetUpdate{
+		Markdown: &newMarkdown,
+	}
+
+	err = service.Update("markdown_update_test", updates)
+	require.NoError(t, err)
+
+	// Verify update
+	updated, err := service.Get("markdown_update_test")
+	require.NoError(t, err)
+	assert.Equal(t, "Test description", updated.Description) // Unchanged
+	assert.Equal(t, []string{"test"}, updated.Tags)          // Unchanged
+	assert.Equal(t, "# Updated Content\n\nThis is the new content.", updated.Markdown)
+	assert.Equal(t, originalCreatedAt.Unix(), updated.CreatedAt.Unix())
+	// last_modified should be >= original (may be same second due to RFC3339 precision)
+	assert.True(t, updated.LastModified.Unix() >= originalLastModified.Unix())
+}
+
+func TestUpdate_PartialUpdate(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Create a ruleset
+	ruleset := &Ruleset{
+		Name:        "partial_update_test",
+		Description: "Original description",
+		Tags:        []string{"original", "tags"},
+		Markdown:    "# Original",
+	}
+
+	err := service.Create(ruleset)
+	require.NoError(t, err)
+
+	originalCreatedAt := ruleset.CreatedAt
+	originalLastModified := ruleset.LastModified
+	time.Sleep(100 * time.Millisecond)
+
+	// Update only description and markdown, leave tags unchanged
+	newDescription := "Updated description"
+	newMarkdown := "# Updated"
+	updates := &RulesetUpdate{
+		Description: &newDescription,
+		Markdown:    &newMarkdown,
+	}
+
+	err = service.Update("partial_update_test", updates)
+	require.NoError(t, err)
+
+	// Verify update
+	updated, err := service.Get("partial_update_test")
+	require.NoError(t, err)
+	assert.Equal(t, "Updated description", updated.Description)
+	assert.Equal(t, []string{"original", "tags"}, updated.Tags) // Unchanged
+	assert.Equal(t, "# Updated", updated.Markdown)
+	assert.Equal(t, originalCreatedAt.Unix(), updated.CreatedAt.Unix())
+	// last_modified should be >= original (may be same second due to RFC3339 precision)
+	assert.True(t, updated.LastModified.Unix() >= originalLastModified.Unix())
+}
+
+func TestUpdate_AllFields(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Create a ruleset
+	ruleset := &Ruleset{
+		Name:        "all_fields_update_test",
+		Description: "Original description",
+		Tags:        []string{"original"},
+		Markdown:    "# Original",
+	}
+
+	err := service.Create(ruleset)
+	require.NoError(t, err)
+
+	originalCreatedAt := ruleset.CreatedAt
+	originalLastModified := ruleset.LastModified
+	time.Sleep(100 * time.Millisecond)
+
+	// Update all fields
+	newDescription := "Completely updated description"
+	newTags := []string{"updated", "all", "fields"}
+	newMarkdown := "# Completely Updated\n\nAll fields changed."
+	updates := &RulesetUpdate{
+		Description: &newDescription,
+		Tags:        &newTags,
+		Markdown:    &newMarkdown,
+	}
+
+	err = service.Update("all_fields_update_test", updates)
+	require.NoError(t, err)
+
+	// Verify update
+	updated, err := service.Get("all_fields_update_test")
+	require.NoError(t, err)
+	assert.Equal(t, "Completely updated description", updated.Description)
+	assert.Equal(t, []string{"updated", "all", "fields"}, updated.Tags)
+	assert.Equal(t, "# Completely Updated\n\nAll fields changed.", updated.Markdown)
+	assert.Equal(t, originalCreatedAt.Unix(), updated.CreatedAt.Unix())
+	// last_modified should be >= original (may be same second due to RFC3339 precision)
+	assert.True(t, updated.LastModified.Unix() >= originalLastModified.Unix())
+}
+
+func TestUpdate_TimestampHandling(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Create a ruleset
+	ruleset := &Ruleset{
+		Name:        "timestamp_update_test",
+		Description: "Test",
+		Tags:        []string{"test"},
+		Markdown:    "# Test",
+	}
+
+	err := service.Create(ruleset)
+	require.NoError(t, err)
+
+	originalCreatedAt := ruleset.CreatedAt
+	originalLastModified := ruleset.LastModified
+
+	// Wait to ensure timestamp difference
+	time.Sleep(100 * time.Millisecond)
+
+	// Update
+	newDescription := "Updated"
+	updates := &RulesetUpdate{
+		Description: &newDescription,
+	}
+
+	err = service.Update("timestamp_update_test", updates)
+	require.NoError(t, err)
+
+	// Verify timestamps
+	updated, err := service.Get("timestamp_update_test")
+	require.NoError(t, err)
+
+	// created_at should be preserved
+	assert.Equal(t, originalCreatedAt.Unix(), updated.CreatedAt.Unix())
+
+	// last_modified should be updated (>= due to RFC3339 second precision)
+	assert.True(t, updated.LastModified.Unix() >= originalLastModified.Unix())
+	assert.True(t, updated.LastModified.Unix() >= originalCreatedAt.Unix())
+}
+
+func TestUpdate_NonExistentRuleset(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Try to update non-existent ruleset
+	newDescription := "Updated description"
+	updates := &RulesetUpdate{
+		Description: &newDescription,
+	}
+
+	err := service.Update("nonexistent_ruleset", updates)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not found")
+}
+
+func TestUpdate_InvalidName(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Try to update with invalid name
+	newDescription := "Updated description"
+	updates := &RulesetUpdate{
+		Description: &newDescription,
+	}
+
+	err := service.Update("Invalid-Name", updates)
+	require.Error(t, err)
+}
+
+func TestUpdate_EmptyUpdate(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Create a ruleset
+	ruleset := &Ruleset{
+		Name:        "empty_update_test",
+		Description: "Original",
+		Tags:        []string{"test"},
+		Markdown:    "# Original",
+	}
+
+	err := service.Create(ruleset)
+	require.NoError(t, err)
+
+	// Update with no fields (should succeed but not change anything)
+	updates := &RulesetUpdate{}
+
+	err = service.Update("empty_update_test", updates)
+	require.NoError(t, err)
+
+	// Verify nothing changed except potentially last_modified
+	updated, err := service.Get("empty_update_test")
+	require.NoError(t, err)
+	assert.Equal(t, "Original", updated.Description)
+	assert.Equal(t, []string{"test"}, updated.Tags)
+	assert.Equal(t, "# Original", updated.Markdown)
+}
