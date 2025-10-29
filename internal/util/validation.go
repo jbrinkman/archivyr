@@ -1,3 +1,6 @@
+// Package util provides utility functions for validation and common operations.
+//
+//nolint:revive // util is an acceptable package name for internal utilities
 package util
 
 import (

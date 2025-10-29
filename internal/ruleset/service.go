@@ -266,7 +266,7 @@ func (s *Service) Search(pattern string) ([]*Ruleset, error) {
 }
 
 // Update updates an existing ruleset with the provided fields
-func (s *Service) Update(name string, updates *RulesetUpdate) error {
+func (s *Service) Update(name string, updates *Update) error {
 	// Validate ruleset name
 	if err := util.ValidateRulesetName(name); err != nil {
 		return err
@@ -368,6 +368,7 @@ func matchesPattern(text, pattern string) bool {
 	starIdx, matchIdx := -1, 0
 
 	for i < len(text) {
+		//nolint:gocritic // if-else chain is more readable for pattern matching algorithm
 		if j < len(pattern) && (pattern[j] == '?' || pattern[j] == text[i]) {
 			i++
 			j++

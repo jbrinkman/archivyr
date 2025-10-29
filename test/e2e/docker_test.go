@@ -40,7 +40,7 @@ type MCPError struct {
 }
 
 // buildDockerImage builds the Docker image for testing
-func buildDockerImage(t *testing.T, ctx context.Context) {
+func buildDockerImage(ctx context.Context, t *testing.T) {
 	t.Helper()
 
 	// Build the Docker image using the Dockerfile
@@ -65,7 +65,7 @@ func buildDockerImage(t *testing.T, ctx context.Context) {
 }
 
 // startMCPContainer starts the MCP server container
-func startMCPContainer(t *testing.T, ctx context.Context) testcontainers.Container {
+func startMCPContainer(ctx context.Context, t *testing.T) testcontainers.Container {
 	t.Helper()
 
 	req := testcontainers.ContainerRequest{
@@ -99,7 +99,7 @@ func TestDockerE2E_BuildImage(t *testing.T) {
 
 	t.Run("BuildSuccess", func(t *testing.T) {
 		// This will build the image and verify no errors occur
-		buildDockerImage(t, ctx)
+		buildDockerImage(ctx, t)
 	})
 }
 
@@ -108,7 +108,7 @@ func TestDockerE2E_ContainerStartup(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("StartupSuccess", func(t *testing.T) {
-		container := startMCPContainer(t, ctx)
+		container := startMCPContainer(ctx, t)
 		defer func() {
 			err := container.Terminate(ctx)
 			require.NoError(t, err)
@@ -135,7 +135,7 @@ func TestDockerE2E_ContainerStartup(t *testing.T) {
 	})
 
 	t.Run("ValkeyHealthCheck", func(t *testing.T) {
-		container := startMCPContainer(t, ctx)
+		container := startMCPContainer(ctx, t)
 		defer func() {
 			err := container.Terminate(ctx)
 			require.NoError(t, err)
@@ -156,7 +156,7 @@ func TestDockerE2E_ContainerStartup(t *testing.T) {
 func TestDockerE2E_MCPServerAvailability(t *testing.T) {
 	ctx := context.Background()
 
-	container := startMCPContainer(t, ctx)
+	container := startMCPContainer(ctx, t)
 	defer func() {
 		err := container.Terminate(ctx)
 		require.NoError(t, err)
@@ -208,7 +208,7 @@ func TestDockerE2E_MCPServerAvailability(t *testing.T) {
 func TestDockerE2E_FullCRUDWorkflow(t *testing.T) {
 	ctx := context.Background()
 
-	container := startMCPContainer(t, ctx)
+	container := startMCPContainer(ctx, t)
 	defer func() {
 		err := container.Terminate(ctx)
 		require.NoError(t, err)
@@ -360,7 +360,7 @@ func TestDockerE2E_FullCRUDWorkflow(t *testing.T) {
 func TestDockerE2E_DataPersistence(t *testing.T) {
 	ctx := context.Background()
 
-	container := startMCPContainer(t, ctx)
+	container := startMCPContainer(ctx, t)
 	defer func() {
 		err := container.Terminate(ctx)
 		require.NoError(t, err)
@@ -405,7 +405,7 @@ func TestDockerE2E_GracefulShutdown(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("SIGTERMShutdown", func(t *testing.T) {
-		container := startMCPContainer(t, ctx)
+		container := startMCPContainer(ctx, t)
 
 		// Get container logs before shutdown
 		logsBefore, err := container.Logs(ctx)
@@ -440,7 +440,7 @@ func TestDockerE2E_GracefulShutdown(t *testing.T) {
 	})
 
 	t.Run("CleanShutdown", func(t *testing.T) {
-		container := startMCPContainer(t, ctx)
+		container := startMCPContainer(ctx, t)
 
 		// Verify container is running
 		state, err := container.State(ctx)
@@ -469,7 +469,7 @@ func TestDockerE2E_GracefulShutdown(t *testing.T) {
 func TestDockerE2E_ContainerLogs(t *testing.T) {
 	ctx := context.Background()
 
-	container := startMCPContainer(t, ctx)
+	container := startMCPContainer(ctx, t)
 	defer func() {
 		err := container.Terminate(ctx)
 		require.NoError(t, err)
@@ -504,7 +504,7 @@ func TestDockerE2E_ContainerLogs(t *testing.T) {
 func TestDockerE2E_ErrorHandling(t *testing.T) {
 	ctx := context.Background()
 
-	container := startMCPContainer(t, ctx)
+	container := startMCPContainer(ctx, t)
 	defer func() {
 		err := container.Terminate(ctx)
 		require.NoError(t, err)

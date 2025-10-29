@@ -12,8 +12,8 @@ type Ruleset struct {
 	LastModified time.Time `json:"last_modified"`
 }
 
-// RulesetUpdate represents partial updates to an existing ruleset
-type RulesetUpdate struct {
+// Update represents partial updates to an existing ruleset
+type Update struct {
 	Description *string   `json:"description,omitempty"`
 	Tags        *[]string `json:"tags,omitempty"`
 	Markdown    *string   `json:"markdown,omitempty"`

@@ -1,3 +1,4 @@
+// Package valkey provides a wrapper around the valkey-glide client for managing Valkey connections.
 package valkey
 
 import (

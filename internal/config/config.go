@@ -1,3 +1,4 @@
+// Package config provides configuration management for the MCP Ruleset Server.
 package config
 
 import (

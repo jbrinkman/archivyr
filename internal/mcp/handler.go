@@ -1,3 +1,4 @@
+// Package mcp implements the Model Context Protocol handlers for ruleset operations.
 package mcp
 
 import (
@@ -76,7 +77,7 @@ func (h *Handler) HandleResourceRead(ctx context.Context, req mcp.ReadResourceRe
 }
 
 // handleResourceRead handles resource read requests for rulesets
-func (h *Handler) handleResourceRead(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+func (h *Handler) handleResourceRead(_ context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 	// Extract ruleset name from URI
 	// URI format: "ruleset://{name}" or "ruleset:{name}"
 	uri := req.Params.URI
@@ -189,7 +190,7 @@ func (h *Handler) HandleCreateRuleset(ctx context.Context, req mcp.CallToolReque
 }
 
 // handleCreateRuleset handles the create_ruleset tool invocation
-func (h *Handler) handleCreateRuleset(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (h *Handler) handleCreateRuleset(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	// Extract required parameters
 	name, err := req.RequireString("name")
 	if err != nil {
@@ -231,7 +232,7 @@ func (h *Handler) HandleGetRuleset(ctx context.Context, req mcp.CallToolRequest)
 }
 
 // handleGetRuleset handles the get_ruleset tool invocation
-func (h *Handler) handleGetRuleset(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (h *Handler) handleGetRuleset(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	// Extract required parameter
 	name, err := req.RequireString("name")
 	if err != nil {
@@ -255,7 +256,7 @@ func (h *Handler) HandleUpdateRuleset(ctx context.Context, req mcp.CallToolReque
 }
 
 // handleUpdateRuleset handles the update_ruleset tool invocation
-func (h *Handler) handleUpdateRuleset(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (h *Handler) handleUpdateRuleset(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	// Extract required parameter
 	name, err := req.RequireString("name")
 	if err != nil {
@@ -263,7 +264,7 @@ func (h *Handler) handleUpdateRuleset(ctx context.Context, req mcp.CallToolReque
 	}
 
 	// Build update struct with optional parameters
-	updates := &ruleset.RulesetUpdate{}
+	updates := &ruleset.Update{}
 	args := req.GetArguments()
 
 	if description, ok := args["description"].(string); ok {
@@ -301,7 +302,7 @@ func (h *Handler) HandleDeleteRuleset(ctx context.Context, req mcp.CallToolReque
 }
 
 // handleDeleteRuleset handles the delete_ruleset tool invocation
-func (h *Handler) handleDeleteRuleset(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (h *Handler) handleDeleteRuleset(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	// Extract required parameter
 	name, err := req.RequireString("name")
 	if err != nil {
@@ -323,7 +324,7 @@ func (h *Handler) HandleListRulesets(ctx context.Context, req mcp.CallToolReques
 }
 
 // handleListRulesets handles the list_rulesets tool invocation
-func (h *Handler) handleListRulesets(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (h *Handler) handleListRulesets(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	// List all rulesets
 	rulesets, err := h.rulesetService.List()
 	if err != nil {
@@ -355,7 +356,7 @@ func (h *Handler) HandleSearchRulesets(ctx context.Context, req mcp.CallToolRequ
 }
 
 // handleSearchRulesets handles the search_rulesets tool invocation
-func (h *Handler) handleSearchRulesets(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (h *Handler) handleSearchRulesets(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	// Extract required parameter
 	pattern, err := req.RequireString("pattern")
 	if err != nil {

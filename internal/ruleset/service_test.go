@@ -14,6 +14,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+const testUpdatedDescription = "Updated description"
+
 // setupTestValkey creates a Valkey container for testing
 func setupTestValkey(t *testing.T) (*valkey.Client, func()) {
 	ctx := context.Background()
@@ -502,6 +504,7 @@ func TestSearch_AllRulesets(t *testing.T) {
 	assert.Len(t, results, 3)
 }
 
+//nolint:dupl // Similar test structure but testing different update fields
 func TestUpdate_SuccessfulDescriptionUpdate(t *testing.T) {
 	client, cleanup := setupTestValkey(t)
 	defer cleanup()
@@ -524,8 +527,8 @@ func TestUpdate_SuccessfulDescriptionUpdate(t *testing.T) {
 	time.Sleep(100 * time.Millisecond) // Ensure timestamp difference
 
 	// Update description
-	newDescription := "Updated description"
-	updates := &RulesetUpdate{
+	newDescription := testUpdatedDescription
+	updates := &Update{
 		Description: &newDescription,
 	}
 
@@ -535,7 +538,7 @@ func TestUpdate_SuccessfulDescriptionUpdate(t *testing.T) {
 	// Verify update
 	updated, err := service.Get("update_test")
 	require.NoError(t, err)
-	assert.Equal(t, "Updated description", updated.Description)
+	assert.Equal(t, testUpdatedDescription, updated.Description)
 	assert.Equal(t, []string{"test"}, updated.Tags) // Unchanged
 	assert.Equal(t, "# Original", updated.Markdown) // Unchanged
 	assert.Equal(t, originalCreatedAt.Unix(), updated.CreatedAt.Unix())
@@ -566,7 +569,7 @@ func TestUpdate_SuccessfulTagsUpdate(t *testing.T) {
 
 	// Update tags
 	newTags := []string{"new", "updated", "tags"}
-	updates := &RulesetUpdate{
+	updates := &Update{
 		Tags: &newTags,
 	}
 
@@ -584,6 +587,7 @@ func TestUpdate_SuccessfulTagsUpdate(t *testing.T) {
 	assert.True(t, updated.LastModified.Unix() >= originalLastModified.Unix())
 }
 
+//nolint:dupl // Similar test structure but testing different update fields
 func TestUpdate_SuccessfulMarkdownUpdate(t *testing.T) {
 	client, cleanup := setupTestValkey(t)
 	defer cleanup()
@@ -607,7 +611,7 @@ func TestUpdate_SuccessfulMarkdownUpdate(t *testing.T) {
 
 	// Update markdown
 	newMarkdown := "# Updated Content\n\nThis is the new content."
-	updates := &RulesetUpdate{
+	updates := &Update{
 		Markdown: &newMarkdown,
 	}
 
@@ -647,9 +651,9 @@ func TestUpdate_PartialUpdate(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Update only description and markdown, leave tags unchanged
-	newDescription := "Updated description"
+	newDescription := testUpdatedDescription
 	newMarkdown := "# Updated"
-	updates := &RulesetUpdate{
+	updates := &Update{
 		Description: &newDescription,
 		Markdown:    &newMarkdown,
 	}
@@ -660,7 +664,7 @@ func TestUpdate_PartialUpdate(t *testing.T) {
 	// Verify update
 	updated, err := service.Get("partial_update_test")
 	require.NoError(t, err)
-	assert.Equal(t, "Updated description", updated.Description)
+	assert.Equal(t, testUpdatedDescription, updated.Description)
 	assert.Equal(t, []string{"original", "tags"}, updated.Tags) // Unchanged
 	assert.Equal(t, "# Updated", updated.Markdown)
 	assert.Equal(t, originalCreatedAt.Unix(), updated.CreatedAt.Unix())
@@ -693,7 +697,7 @@ func TestUpdate_AllFields(t *testing.T) {
 	newDescription := "Completely updated description"
 	newTags := []string{"updated", "all", "fields"}
 	newMarkdown := "# Completely Updated\n\nAll fields changed."
-	updates := &RulesetUpdate{
+	updates := &Update{
 		Description: &newDescription,
 		Tags:        &newTags,
 		Markdown:    &newMarkdown,
@@ -738,7 +742,7 @@ func TestUpdate_TimestampHandling(t *testing.T) {
 
 	// Update
 	newDescription := "Updated"
-	updates := &RulesetUpdate{
+	updates := &Update{
 		Description: &newDescription,
 	}
 
@@ -764,8 +768,8 @@ func TestUpdate_NonExistentRuleset(t *testing.T) {
 	service := NewService(client)
 
 	// Try to update non-existent ruleset
-	newDescription := "Updated description"
-	updates := &RulesetUpdate{
+	newDescription := testUpdatedDescription
+	updates := &Update{
 		Description: &newDescription,
 	}
 
@@ -781,8 +785,8 @@ func TestUpdate_InvalidName(t *testing.T) {
 	service := NewService(client)
 
 	// Try to update with invalid name
-	newDescription := "Updated description"
-	updates := &RulesetUpdate{
+	newDescription := testUpdatedDescription
+	updates := &Update{
 		Description: &newDescription,
 	}
 
@@ -808,7 +812,7 @@ func TestUpdate_EmptyUpdate(t *testing.T) {
 	require.NoError(t, err)
 
 	// Update with no fields (should succeed but not change anything)
-	updates := &RulesetUpdate{}
+	updates := &Update{}
 
 	err = service.Update("empty_update_test", updates)
 	require.NoError(t, err)

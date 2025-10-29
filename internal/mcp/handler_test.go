@@ -29,7 +29,7 @@ func (m *MockRulesetService) Get(name string) (*ruleset.Ruleset, error) {
 	return args.Get(0).(*ruleset.Ruleset), args.Error(1)
 }
 
-func (m *MockRulesetService) Update(name string, updates *ruleset.RulesetUpdate) error {
+func (m *MockRulesetService) Update(name string, updates *ruleset.Update) error {
 	args := m.Called(name, updates)
 	return args.Error(0)
 }

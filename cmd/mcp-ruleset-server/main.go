@@ -1,3 +1,4 @@
+// Package main provides the entry point for the MCP Ruleset Server.
 package main
 
 import (
@@ -48,7 +49,10 @@ func main() {
 	// Test Valkey connection with Ping
 	log.Info().Msg("Testing Valkey connection")
 	if err := valkeyClient.Ping(); err != nil {
-		log.Fatal().Err(err).Msg("Valkey connection test failed")
+		log.Error().Err(err).Msg("Valkey connection test failed")
+		// Exit immediately without running deferred functions since connection failed
+		//nolint:gocritic // os.Exit is intentional here to prevent deferred cleanup on connection failure
+		os.Exit(1)
 	}
 	log.Info().Msg("Valkey connection successful")
 

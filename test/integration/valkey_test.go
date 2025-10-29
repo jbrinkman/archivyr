@@ -101,7 +101,7 @@ func TestValkeyIntegration_FullCRUDWorkflow(t *testing.T) {
 		newTags := []string{"test", "integration", "updated"}
 		newMarkdown := "# Updated Test Ruleset\n\nThis has been updated."
 
-		updates := &ruleset.RulesetUpdate{
+		updates := &ruleset.Update{
 			Description: &newDesc,
 			Tags:        &newTags,
 			Markdown:    &newMarkdown,
@@ -301,7 +301,7 @@ func TestValkeyIntegration_ConcurrentOperations(t *testing.T) {
 				defer wg.Done()
 
 				newDesc := fmt.Sprintf("Updated by goroutine %d", index)
-				updates := &ruleset.RulesetUpdate{
+				updates := &ruleset.Update{
 					Description: &newDesc,
 				}
 
@@ -429,7 +429,7 @@ func TestValkeyIntegration_ErrorScenarios(t *testing.T) {
 
 	t.Run("UpdateNonexistent", func(t *testing.T) {
 		newDesc := "Updated description"
-		updates := &ruleset.RulesetUpdate{
+		updates := &ruleset.Update{
 			Description: &newDesc,
 		}
 
