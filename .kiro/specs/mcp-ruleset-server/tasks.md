@@ -104,14 +104,14 @@
   - Test error on non-existent ruleset
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 9. Implement ruleset service - Delete operation
+- [x] 9. Implement ruleset service - Delete operation
   - Implement Delete(name string) to remove ruleset from Valkey using DEL command
   - Check if ruleset exists before deleting
   - Return confirmation message on success
   - Return error with list of existing names if ruleset not found
   - _Requirements: 7.1, 7.2, 7.3, 7.4_
 
-- [ ] 9.1 Write unit tests for Delete operation
+- [x] 9.1 Write unit tests for Delete operation
   - Test successful deletion
   - Test error response with existing names list
   - Test deletion of non-existent ruleset

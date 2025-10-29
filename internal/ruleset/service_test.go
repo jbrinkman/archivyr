@@ -820,3 +820,127 @@ func TestUpdate_EmptyUpdate(t *testing.T) {
 	assert.Equal(t, []string{"test"}, updated.Tags)
 	assert.Equal(t, "# Original", updated.Markdown)
 }
+
+func TestDelete_Success(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Create a ruleset
+	ruleset := &Ruleset{
+		Name:        "delete_test",
+		Description: "Test ruleset for deletion",
+		Tags:        []string{"test", "delete"},
+		Markdown:    "# Delete Test",
+	}
+
+	err := service.Create(ruleset)
+	require.NoError(t, err)
+
+	// Verify it exists
+	exists, err := service.Exists("delete_test")
+	require.NoError(t, err)
+	assert.True(t, exists)
+
+	// Delete the ruleset
+	err = service.Delete("delete_test")
+	require.NoError(t, err)
+
+	// Verify it no longer exists
+	exists, err = service.Exists("delete_test")
+	require.NoError(t, err)
+	assert.False(t, exists)
+
+	// Verify Get returns not found error
+	_, err = service.Get("delete_test")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not found")
+}
+
+func TestDelete_NonExistentRuleset(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Create some rulesets to populate the existing names list
+	testRulesets := []string{"ruleset_one", "ruleset_two", "ruleset_three"}
+	for _, name := range testRulesets {
+		ruleset := &Ruleset{
+			Name:        name,
+			Description: "Test",
+			Tags:        []string{"test"},
+			Markdown:    "# Test",
+		}
+		err := service.Create(ruleset)
+		require.NoError(t, err)
+	}
+
+	// Try to delete non-existent ruleset
+	err := service.Delete("nonexistent_ruleset")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not found")
+	assert.Contains(t, err.Error(), "nonexistent_ruleset")
+	// Verify error includes list of existing names
+	for _, name := range testRulesets {
+		assert.Contains(t, err.Error(), name)
+	}
+}
+
+func TestDelete_InvalidName(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Try to delete with invalid name
+	err := service.Delete("Invalid-Name")
+	require.Error(t, err)
+	// Should fail validation before checking existence
+	assert.NotContains(t, err.Error(), "not found")
+}
+
+func TestDelete_MultipleRulesets(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Create multiple rulesets
+	testRulesets := []string{"delete_multi_one", "delete_multi_two", "delete_multi_three"}
+	for _, name := range testRulesets {
+		ruleset := &Ruleset{
+			Name:        name,
+			Description: "Test",
+			Tags:        []string{"test"},
+			Markdown:    "# Test",
+		}
+		err := service.Create(ruleset)
+		require.NoError(t, err)
+	}
+
+	// Delete one ruleset
+	err := service.Delete("delete_multi_two")
+	require.NoError(t, err)
+
+	// Verify only the deleted one is gone
+	exists, err := service.Exists("delete_multi_two")
+	require.NoError(t, err)
+	assert.False(t, exists)
+
+	// Verify others still exist
+	exists, err = service.Exists("delete_multi_one")
+	require.NoError(t, err)
+	assert.True(t, exists)
+
+	exists, err = service.Exists("delete_multi_three")
+	require.NoError(t, err)
+	assert.True(t, exists)
+
+	// Verify list shows remaining rulesets
+	names, err := service.ListNames()
+	require.NoError(t, err)
+	assert.Len(t, names, 2)
+	assert.ElementsMatch(t, []string{"delete_multi_one", "delete_multi_three"}, names)
+}

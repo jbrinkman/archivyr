@@ -323,6 +323,41 @@ func (s *Service) Update(name string, updates *RulesetUpdate) error {
 	return nil
 }
 
+// Delete removes a ruleset from Valkey by name
+func (s *Service) Delete(name string) error {
+	// Validate ruleset name
+	if err := util.ValidateRulesetName(name); err != nil {
+		return err
+	}
+
+	// Check if ruleset exists
+	exists, err := s.Exists(name)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		// Get list of existing names for error message
+		existingNames, listErr := s.ListNames()
+		if listErr != nil {
+			return fmt.Errorf("ruleset '%s' not found", name)
+		}
+		return fmt.Errorf("ruleset '%s' not found. Existing rulesets: %v", name, existingNames)
+	}
+
+	// Delete the ruleset from Valkey
+	key := fmt.Sprintf("ruleset:%s", name)
+	ctx := s.valkeyClient.GetContext()
+	client := s.valkeyClient.GetClient()
+
+	_, err = client.Del(ctx, []string{key})
+	if err != nil {
+		return fmt.Errorf("failed to delete ruleset: %w", err)
+	}
+
+	return nil
+}
+
 // matchesPattern performs simple glob pattern matching
 // Supports * (any characters) and ? (single character)
 func matchesPattern(text, pattern string) bool {
