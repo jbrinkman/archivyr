@@ -242,11 +242,11 @@ Configure via environment variables:
 
 Archivyr is built with:
 
-- **Go 1.21+**: Core implementation
+- **Go 1.24+**: Core implementation
 - **Valkey**: Key-value storage backend
 - **valkey-glide v2**: Go client for Valkey
 - **mcp-go**: MCP protocol implementation
-- **Alpine Linux**: Minimal Docker base image
+- **Valkey Docker image**: Official Valkey image as base
 
 ### Data Storage
 
