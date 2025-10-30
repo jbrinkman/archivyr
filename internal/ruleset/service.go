@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jbrinkman/archivyr/internal/util"
+	"github.com/jbrinkman/archivyr/internal/validation"
 	"github.com/jbrinkman/archivyr/internal/valkey"
 	"github.com/valkey-io/valkey-glide/go/v2/models"
 )
@@ -24,7 +24,7 @@ func NewService(client *valkey.Client) *Service {
 
 // Exists checks if a ruleset with the given name exists
 func (s *Service) Exists(name string) (bool, error) {
-	if err := util.ValidateRulesetName(name); err != nil {
+	if err := validation.ValidateRulesetName(name); err != nil {
 		return false, err
 	}
 
@@ -75,7 +75,7 @@ func (s *Service) ListNames() ([]string, error) {
 // Create creates a new ruleset in Valkey
 func (s *Service) Create(ruleset *Ruleset) error {
 	// Validate ruleset name
-	if err := util.ValidateRulesetName(ruleset.Name); err != nil {
+	if err := validation.ValidateRulesetName(ruleset.Name); err != nil {
 		return err
 	}
 
@@ -115,8 +115,8 @@ func (s *Service) Create(ruleset *Ruleset) error {
 		"description":   ruleset.Description,
 		"tags":          string(tagsJSON),
 		"markdown":      ruleset.Markdown,
-		"created_at":    util.FormatTimestamp(ruleset.CreatedAt),
-		"last_modified": util.FormatTimestamp(ruleset.LastModified),
+		"created_at":    validation.FormatTimestamp(ruleset.CreatedAt),
+		"last_modified": validation.FormatTimestamp(ruleset.LastModified),
 	}
 
 	_, err = client.HSet(ctx, key, fields)
@@ -130,7 +130,7 @@ func (s *Service) Create(ruleset *Ruleset) error {
 // Get retrieves a ruleset by exact name from Valkey
 func (s *Service) Get(name string) (*Ruleset, error) {
 	// Validate ruleset name
-	if err := util.ValidateRulesetName(name); err != nil {
+	if err := validation.ValidateRulesetName(name); err != nil {
 		return nil, err
 	}
 
@@ -172,7 +172,7 @@ func (s *Service) Get(name string) (*Ruleset, error) {
 	}
 
 	if createdAtStr, ok := result["created_at"]; ok {
-		createdAt, err := util.ParseTimestamp(createdAtStr)
+		createdAt, err := validation.ParseTimestamp(createdAtStr)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse created_at: %w", err)
 		}
@@ -180,7 +180,7 @@ func (s *Service) Get(name string) (*Ruleset, error) {
 	}
 
 	if lastModifiedStr, ok := result["last_modified"]; ok {
-		lastModified, err := util.ParseTimestamp(lastModifiedStr)
+		lastModified, err := validation.ParseTimestamp(lastModifiedStr)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse last_modified: %w", err)
 		}
@@ -268,7 +268,7 @@ func (s *Service) Search(pattern string) ([]*Ruleset, error) {
 // Update updates an existing ruleset with the provided fields
 func (s *Service) Update(name string, updates *Update) error {
 	// Validate ruleset name
-	if err := util.ValidateRulesetName(name); err != nil {
+	if err := validation.ValidateRulesetName(name); err != nil {
 		return err
 	}
 
@@ -307,7 +307,7 @@ func (s *Service) Update(name string, updates *Update) error {
 	}
 
 	// Always update last_modified timestamp
-	fields["last_modified"] = util.FormatTimestamp(time.Now())
+	fields["last_modified"] = validation.FormatTimestamp(time.Now())
 
 	// If no fields to update, return early
 	if len(fields) == 1 { // Only last_modified
@@ -328,7 +328,7 @@ func (s *Service) Update(name string, updates *Update) error {
 // For existing rulesets, only fields in updates that are non-nil will be updated
 func (s *Service) Upsert(rs *Ruleset, updates *Update) error {
 	// Validate ruleset name
-	if err := util.ValidateRulesetName(rs.Name); err != nil {
+	if err := validation.ValidateRulesetName(rs.Name); err != nil {
 		return err
 	}
 
@@ -356,7 +356,7 @@ func (s *Service) Upsert(rs *Ruleset, updates *Update) error {
 // Delete removes a ruleset from Valkey by name
 func (s *Service) Delete(name string) error {
 	// Validate ruleset name
-	if err := util.ValidateRulesetName(name); err != nil {
+	if err := validation.ValidateRulesetName(name); err != nil {
 		return err
 	}
 
