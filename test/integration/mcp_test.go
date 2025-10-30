@@ -44,10 +44,10 @@ func TestMCPIntegration_ToolInvocations(t *testing.T) {
 		}
 
 		// Invoke tool handler directly
-		result, err := handler.HandleCreateRuleset(ctx, req)
+		result, err := handler.HandleUpsertRuleset(ctx, req)
 		require.NoError(t, err)
 		assert.NotNil(t, result)
-		assert.Contains(t, result.Content[0].(mcplib.TextContent).Text, "Successfully created ruleset")
+		assert.Contains(t, result.Content[0].(mcplib.TextContent).Text, "Successfully upserted ruleset")
 		assert.Contains(t, result.Content[0].(mcplib.TextContent).Text, "test_create_ruleset")
 
 		// Verify ruleset was created
@@ -70,7 +70,7 @@ func TestMCPIntegration_ToolInvocations(t *testing.T) {
 		}
 
 		// Invoke tool handler
-		result, err := handler.HandleCreateRuleset(ctx, req)
+		result, err := handler.HandleUpsertRuleset(ctx, req)
 		require.NoError(t, err)
 		assert.NotNil(t, result)
 		assert.True(t, result.IsError)
@@ -100,11 +100,12 @@ func TestMCPIntegration_ToolInvocations(t *testing.T) {
 			},
 		}
 
-		result, err := handler.HandleCreateRuleset(ctx, req)
+		result, err := handler.HandleUpsertRuleset(ctx, req)
 		require.NoError(t, err)
 		assert.NotNil(t, result)
-		assert.True(t, result.IsError)
-		assert.Contains(t, result.Content[0].(mcplib.TextContent).Text, "already exists")
+		// Upsert should succeed and update the existing ruleset
+		assert.False(t, result.IsError)
+		assert.Contains(t, result.Content[0].(mcplib.TextContent).Text, "Successfully upserted ruleset")
 	})
 
 	t.Run("GetRuleset_Success", func(t *testing.T) {
@@ -496,7 +497,7 @@ func TestMCPIntegration_ErrorResponses(t *testing.T) {
 			},
 		}
 
-		result, err := handler.HandleCreateRuleset(ctx, req)
+		result, err := handler.HandleUpsertRuleset(ctx, req)
 		require.NoError(t, err)
 		assert.NotNil(t, result)
 		assert.True(t, result.IsError)
@@ -605,7 +606,7 @@ func TestMCPIntegration_ConcurrentToolInvocations(t *testing.T) {
 					},
 				}
 
-				result, err := handler.HandleCreateRuleset(ctx, req)
+				result, err := handler.HandleUpsertRuleset(ctx, req)
 				if err != nil {
 					results <- err
 					return

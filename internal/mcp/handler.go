@@ -240,14 +240,16 @@ func (h *Handler) handleUpsertRuleset(_ context.Context, req mcp.CallToolRequest
 	return mcp.NewToolResultText(fmt.Sprintf("Successfully upserted ruleset '%s'", name)), nil
 }
 
-// HandleCreateRuleset handles the create_ruleset tool invocation (exported for testing)
-// Deprecated: Use HandleUpsertRuleset instead
+// HandleCreateRuleset handles the create_ruleset tool invocation (exported for testing).
+//
+// Deprecated: Use HandleUpsertRuleset instead.
 func (h *Handler) HandleCreateRuleset(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return h.handleCreateRuleset(ctx, req)
 }
 
-// handleCreateRuleset handles the create_ruleset tool invocation
-// Deprecated: Use handleUpsertRuleset instead
+// handleCreateRuleset handles the create_ruleset tool invocation.
+//
+// Deprecated: Use handleUpsertRuleset instead.
 func (h *Handler) handleCreateRuleset(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	// Extract required parameters
 	name, err := req.RequireString("name")
