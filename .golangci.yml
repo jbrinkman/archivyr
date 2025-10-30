@@ -107,7 +107,7 @@ issues-config:
 
     # Allow util package name - it's a common convention for utility packages
     - path: internal/util/
-      text: "var-naming: avoid meaningless package names"
+      text: "avoid meaningless package names"
       linters:
         - revive
 
