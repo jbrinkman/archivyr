@@ -142,6 +142,43 @@ When creating rulesets, include useful metadata:
 - **Description**: Brief summary of the ruleset
 - **Tags**: Categorization tags (e.g., ["python", "style", "pep8"])
 
+## Listing and Searching Rulesets
+
+The `search_rulesets` tool serves dual purposes:
+
+### Listing All Rulesets
+
+To see all available rulesets, simply omit the pattern parameter:
+
+```
+List all available rulesets
+```
+
+Or explicitly use the wildcard pattern:
+
+```
+Search for rulesets matching "*"
+```
+
+Both approaches return the same result: a complete list of all rulesets with their metadata.
+
+### Searching with Patterns
+
+To find specific rulesets, provide a glob pattern:
+
+```
+Search for rulesets matching "*python*"
+Search for rulesets matching "style_*"
+Search for rulesets matching "*_guide"
+```
+
+**Pattern Examples**:
+
+- `*python*` - Matches any ruleset with "python" in the name
+- `style_*` - Matches rulesets starting with "style_"
+- `*_guide` - Matches rulesets ending with "_guide"
+- `api_*` - Matches rulesets starting with "api_"
+
 ## Example Workflow
 
 Here's a typical workflow for using Archivyr with these samples:
@@ -154,19 +191,25 @@ Here's a typical workflow for using Archivyr with these samples:
 
 2. **Import sample rulesets** using your AI editor
 
-3. **Reference rulesets** in your projects:
+3. **List all rulesets** to see what's available:
 
    ```
-   Use the python_style_guide ruleset for this Python code
+   List all available rulesets
    ```
 
-4. **Search for rulesets**:
+4. **Search for specific rulesets** by pattern:
 
    ```
    Search for rulesets matching "*style*"
    ```
 
-5. **Update rulesets** as your standards evolve:
+5. **Reference rulesets** in your projects:
+
+   ```
+   Use the python_style_guide ruleset for this Python code
+   ```
+
+6. **Update rulesets** as your standards evolve:
 
    ```
    Update the python_style_guide with new section about async/await patterns

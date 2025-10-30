@@ -555,7 +555,23 @@ func TestMCPIntegration_ErrorResponses(t *testing.T) {
 		assert.Contains(t, text, "Existing rulesets")
 	})
 
-	t.Run("ErrorResponse_EmptySearchPattern", func(t *testing.T) {
+	t.Run("SearchRulesets_EmptyPatternListsAll", func(t *testing.T) {
+		// Create a test ruleset first
+		createReq := mcplib.CallToolRequest{
+			Params: mcplib.CallToolParams{
+				Name: "upsert_ruleset",
+				Arguments: map[string]interface{}{
+					"name":        "search_test_ruleset",
+					"description": "For search testing",
+					"tags":        []string{"test"},
+					"markdown":    "# Test",
+				},
+			},
+		}
+		_, err := handler.HandleUpsertRuleset(ctx, createReq)
+		require.NoError(t, err)
+
+		// Search with empty pattern should list all (defaults to "*")
 		req := mcplib.CallToolRequest{
 			Params: mcplib.CallToolParams{
 				Name: "search_rulesets",
@@ -568,8 +584,10 @@ func TestMCPIntegration_ErrorResponses(t *testing.T) {
 		result, err := handler.HandleSearchRulesets(ctx, req)
 		require.NoError(t, err)
 		assert.NotNil(t, result)
-		assert.True(t, result.IsError)
-		assert.Contains(t, result.Content[0].(mcplib.TextContent).Text, "pattern cannot be empty")
+		assert.False(t, result.IsError)
+		assert.Contains(t, result.Content[0].(mcplib.TextContent).Text, "search_test_ruleset")
+		// Should list all rulesets (may include ones from previous tests)
+		assert.Contains(t, result.Content[0].(mcplib.TextContent).Text, "ruleset(s)")
 	})
 }
 

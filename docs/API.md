@@ -82,6 +82,13 @@ Retrieve a ruleset by its exact name using a URI.
 
 Tools provide CRUD operations for managing rulesets.
 
+**Available Tools**:
+
+- `upsert_ruleset`: Create a new ruleset or update an existing one
+- `get_ruleset`: Retrieve a ruleset by exact name
+- `delete_ruleset`: Delete a ruleset by name
+- `search_rulesets`: Search rulesets by pattern or list all (when pattern is omitted or `*`)
+
 ### upsert_ruleset
 
 Create a new ruleset or update an existing one. This tool automatically detects whether the ruleset exists and performs the appropriate operation.
@@ -336,15 +343,28 @@ Delete a ruleset by name.
 
 ---
 
-### list_rulesets
+### search_rulesets
 
-List all available rulesets with metadata (excluding markdown content).
+Search for rulesets by name pattern using glob syntax. When no pattern is provided or pattern is `*`, lists all available rulesets.
 
 #### Parameters
 
-None
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `pattern` | string | No | Glob pattern (e.g., `*python*`, `style_*`, `*_guide`). Defaults to `*` to list all rulesets. |
 
-#### Request Example
+**Pattern Syntax**:
+
+- `*` matches any sequence of characters
+- `?` matches any single character
+- Patterns are matched against the full ruleset name
+- Omitting the pattern or using `*` lists all rulesets
+
+#### Use Cases
+
+**1. Listing All Rulesets**
+
+To list all available rulesets, either omit the pattern parameter or use `*`:
 
 ```json
 {
@@ -352,13 +372,29 @@ None
   "id": 6,
   "method": "tools/call",
   "params": {
-    "name": "list_rulesets",
+    "name": "search_rulesets",
     "arguments": {}
   }
 }
 ```
 
-#### Success Response (With Rulesets)
+Or explicitly:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 6,
+  "method": "tools/call",
+  "params": {
+    "name": "search_rulesets",
+    "arguments": {
+      "pattern": "*"
+    }
+  }
+}
+```
+
+**Success Response (With Rulesets)**:
 
 ```json
 {
@@ -375,7 +411,7 @@ None
 }
 ```
 
-#### Success Response (Empty)
+**Success Response (Empty)**:
 
 ```json
 {
@@ -392,25 +428,9 @@ None
 }
 ```
 
----
+**2. Searching with Specific Patterns**
 
-### search_rulesets
-
-Search for rulesets by name pattern using glob syntax.
-
-#### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `pattern` | string | Yes | Glob pattern (e.g., `*python*`, `style_*`, `*_guide`) |
-
-**Pattern Syntax**:
-
-- `*` matches any sequence of characters
-- `?` matches any single character
-- Patterns are matched against the full ruleset name
-
-#### Request Example
+To search for rulesets matching a specific pattern:
 
 ```json
 {
@@ -426,7 +446,7 @@ Search for rulesets by name pattern using glob syntax.
 }
 ```
 
-#### Success Response (With Results)
+**Success Response (With Results)**:
 
 ```json
 {
@@ -443,7 +463,7 @@ Search for rulesets by name pattern using glob syntax.
 }
 ```
 
-#### Success Response (No Results)
+**Success Response (No Results)**:
 
 ```json
 {
@@ -463,6 +483,12 @@ Search for rulesets by name pattern using glob syntax.
 #### Additional Pattern Examples
 
 ```json
+// List all rulesets (no pattern)
+{}
+
+// List all rulesets (explicit wildcard)
+{"pattern": "*"}
+
 // Match all style guides
 {"pattern": "*_style_*"}
 
@@ -472,8 +498,8 @@ Search for rulesets by name pattern using glob syntax.
 // Match specific prefix
 {"pattern": "python_*"}
 
-// Match all rulesets (equivalent to list_rulesets)
-{"pattern": "*"}
+// Match specific suffix
+{"pattern": "*_conventions"}
 ```
 
 ---
@@ -669,13 +695,13 @@ Fields:
   }
 }
 
-// 2. List all rulesets
+// 2. List all rulesets (using search_rulesets with no pattern)
 {
   "jsonrpc": "2.0",
   "id": 2,
   "method": "tools/call",
   "params": {
-    "name": "list_rulesets",
+    "name": "search_rulesets",
     "arguments": {}
   }
 }

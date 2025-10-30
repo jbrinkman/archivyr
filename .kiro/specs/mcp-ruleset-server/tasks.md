@@ -264,7 +264,7 @@
   - Update README.md usage examples to show both create and update scenarios
   - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 4.1, 4.2, 4.3_
 
-- [ ] 25. Consolidate list and search tools into search_rulesets
+- [x] 25. Consolidate list and search tools into search_rulesets
   - Remove list_rulesets tool (search with "*" pattern provides same functionality)
   - Make pattern parameter optional in search_rulesets (defaults to "*" for listing all)
   - Update MCP handler to remove list_rulesets tool registration

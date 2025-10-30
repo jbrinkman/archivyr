@@ -194,21 +194,27 @@ Or use the `get_ruleset` tool:
 Get the ruleset named "python_style_guide"
 ```
 
+### Listing All Rulesets
+
+Use the `search_rulesets` tool without a pattern (or with pattern `*`):
+
+```text
+List all available rulesets
+```
+
+Or explicitly:
+
+```text
+Search for rulesets matching "*"
+```
+
 ### Searching Rulesets
 
-Use the `search_rulesets` tool with glob patterns:
+Use the `search_rulesets` tool with specific glob patterns:
 
 ```text
 Search for rulesets matching "*python*"
 Search for rulesets matching "style_*"
-```
-
-### Listing All Rulesets
-
-Use the `list_rulesets` tool:
-
-```text
-List all available rulesets
 ```
 
 ### Deleting a Ruleset
@@ -224,8 +230,7 @@ Delete the ruleset named "old_ruleset"
 - `upsert_ruleset`: Create a new ruleset or update an existing one (automatically detects which operation to perform)
 - `get_ruleset`: Retrieve a ruleset by exact name
 - `delete_ruleset`: Delete a ruleset by name
-- `list_rulesets`: List all available rulesets
-- `search_rulesets`: Search rulesets by name pattern
+- `search_rulesets`: Search rulesets by name pattern, or list all when pattern is omitted or `*`
 
 ## Available MCP Resources
 

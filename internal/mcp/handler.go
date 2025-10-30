@@ -161,16 +161,10 @@ func (h *Handler) RegisterTools(s *server.MCPServer) {
 	)
 	s.AddTool(deleteTool, h.handleDeleteRuleset)
 
-	// Register list_rulesets tool
-	listTool := mcp.NewTool("list_rulesets",
-		mcp.WithDescription("List all available rulesets"),
-	)
-	s.AddTool(listTool, h.handleListRulesets)
-
-	// Register search_rulesets tool
+	// Register search_rulesets tool (replaces list_rulesets)
 	searchTool := mcp.NewTool("search_rulesets",
-		mcp.WithDescription("Search rulesets by name pattern"),
-		mcp.WithString("pattern", mcp.Required(), mcp.Description("Glob pattern (e.g., '*python*', 'style_*')")),
+		mcp.WithDescription("Search rulesets by name pattern. Omit pattern or use '*' to list all rulesets."),
+		mcp.WithString("pattern", mcp.Description("Glob pattern (e.g., '*python*', 'style_*'). Defaults to '*' to list all rulesets.")),
 	)
 	s.AddTool(searchTool, h.handleSearchRulesets)
 }
@@ -417,10 +411,11 @@ func (h *Handler) HandleSearchRulesets(ctx context.Context, req mcp.CallToolRequ
 
 // handleSearchRulesets handles the search_rulesets tool invocation
 func (h *Handler) handleSearchRulesets(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	// Extract required parameter
-	pattern, err := req.RequireString("pattern")
-	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("missing required parameter 'pattern': %v", err)), nil
+	// Extract optional pattern parameter, default to "*" for listing all
+	args := req.GetArguments()
+	pattern := "*"
+	if patternArg, ok := args["pattern"].(string); ok && patternArg != "" {
+		pattern = patternArg
 	}
 
 	// Search rulesets
@@ -431,10 +426,19 @@ func (h *Handler) handleSearchRulesets(_ context.Context, req mcp.CallToolReques
 
 	// Format response
 	if len(rulesets) == 0 {
+		if pattern == "*" {
+			return mcp.NewToolResultText("No rulesets found"), nil
+		}
 		return mcp.NewToolResultText(fmt.Sprintf("No rulesets found matching pattern '%s'", pattern)), nil
 	}
 
-	result := fmt.Sprintf("Found %d ruleset(s) matching '%s':\n\n", len(rulesets), pattern)
+	var result string
+	if pattern == "*" {
+		result = fmt.Sprintf("Found %d ruleset(s):\n\n", len(rulesets))
+	} else {
+		result = fmt.Sprintf("Found %d ruleset(s) matching '%s':\n\n", len(rulesets), pattern)
+	}
+
 	for _, rs := range rulesets {
 		result += fmt.Sprintf("- **%s**: %s\n", rs.Name, rs.Description)
 		if len(rs.Tags) > 0 {
