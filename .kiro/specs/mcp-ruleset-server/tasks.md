@@ -248,7 +248,7 @@
   - Document error codes and handling
   - _Requirements: 13.1, 13.5_
 
-- [ ] 24. Consolidate create and update tools into upsert_ruleset
+- [x] 24. Consolidate create and update tools into upsert_ruleset
   - Merge create_ruleset and update_ruleset into a single upsert_ruleset tool
   - If ruleset exists, update it; if not, create it
   - All fields (name, description, tags, markdown) should be required for new rulesets

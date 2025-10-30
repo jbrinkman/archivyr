@@ -948,3 +948,185 @@ func TestDelete_MultipleRulesets(t *testing.T) {
 	assert.Len(t, names, 2)
 	assert.ElementsMatch(t, []string{"delete_multi_one", "delete_multi_three"}, names)
 }
+
+func TestUpsert_CreateNewRuleset(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Upsert a new ruleset (should create)
+	ruleset := &Ruleset{
+		Name:        "upsert_new",
+		Description: "New ruleset via upsert",
+		Tags:        []string{"test", "upsert"},
+		Markdown:    "# New Ruleset\n\nCreated via upsert.",
+	}
+
+	updates := &Update{
+		Description: &ruleset.Description,
+		Tags:        &ruleset.Tags,
+		Markdown:    &ruleset.Markdown,
+	}
+
+	err := service.Upsert(ruleset, updates)
+	require.NoError(t, err)
+
+	// Verify the ruleset was created
+	exists, err := service.Exists("upsert_new")
+	require.NoError(t, err)
+	assert.True(t, exists)
+
+	// Verify the content
+	retrieved, err := service.Get("upsert_new")
+	require.NoError(t, err)
+	assert.Equal(t, "upsert_new", retrieved.Name)
+	assert.Equal(t, "New ruleset via upsert", retrieved.Description)
+	assert.Equal(t, []string{"test", "upsert"}, retrieved.Tags)
+	assert.Equal(t, "# New Ruleset\n\nCreated via upsert.", retrieved.Markdown)
+}
+
+func TestUpsert_UpdateExistingRuleset(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Create initial ruleset
+	initial := &Ruleset{
+		Name:        "upsert_existing",
+		Description: "Initial description",
+		Tags:        []string{"initial"},
+		Markdown:    "# Initial Content",
+	}
+	err := service.Create(initial)
+	require.NoError(t, err)
+
+	// Wait a moment to ensure timestamp difference
+	time.Sleep(100 * time.Millisecond)
+
+	// Upsert to update the existing ruleset
+	newDescription := "Updated description via upsert"
+	newMarkdown := "# Updated Content\n\nUpdated via upsert."
+
+	ruleset := &Ruleset{
+		Name: "upsert_existing",
+	}
+
+	updates := &Update{
+		Description: &newDescription,
+		Markdown:    &newMarkdown,
+	}
+
+	err = service.Upsert(ruleset, updates)
+	require.NoError(t, err)
+
+	// Verify the ruleset was updated
+	retrieved, err := service.Get("upsert_existing")
+	require.NoError(t, err)
+	assert.Equal(t, "upsert_existing", retrieved.Name)
+	assert.Equal(t, "Updated description via upsert", retrieved.Description)
+	assert.Equal(t, "# Updated Content\n\nUpdated via upsert.", retrieved.Markdown)
+	assert.Equal(t, []string{"initial"}, retrieved.Tags) // Tags unchanged
+
+	// Verify timestamps
+	assert.False(t, retrieved.CreatedAt.IsZero())
+	assert.False(t, retrieved.LastModified.IsZero())
+	assert.True(t, retrieved.LastModified.After(retrieved.CreatedAt) || retrieved.LastModified.Equal(retrieved.CreatedAt))
+}
+
+func TestUpsert_CreateWithMissingDescription(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Try to upsert a new ruleset without description
+	ruleset := &Ruleset{
+		Name:     "upsert_no_desc",
+		Markdown: "# Content",
+	}
+
+	updates := &Update{}
+
+	err := service.Upsert(ruleset, updates)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "description is required")
+}
+
+func TestUpsert_CreateWithMissingMarkdown(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Try to upsert a new ruleset without markdown
+	ruleset := &Ruleset{
+		Name:        "upsert_no_markdown",
+		Description: "Description",
+	}
+
+	updates := &Update{}
+
+	err := service.Upsert(ruleset, updates)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "markdown content is required")
+}
+
+func TestUpsert_UpdatePartialFields(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Create initial ruleset
+	initial := &Ruleset{
+		Name:        "upsert_partial",
+		Description: "Initial description",
+		Tags:        []string{"tag1", "tag2"},
+		Markdown:    "# Initial Content",
+	}
+	err := service.Create(initial)
+	require.NoError(t, err)
+
+	// Upsert to update only description
+	newDescription := "Only description updated"
+
+	ruleset := &Ruleset{
+		Name: "upsert_partial",
+	}
+
+	updates := &Update{
+		Description: &newDescription,
+	}
+
+	err = service.Upsert(ruleset, updates)
+	require.NoError(t, err)
+
+	// Verify only description was updated
+	retrieved, err := service.Get("upsert_partial")
+	require.NoError(t, err)
+	assert.Equal(t, "Only description updated", retrieved.Description)
+	assert.Equal(t, []string{"tag1", "tag2"}, retrieved.Tags) // Unchanged
+	assert.Equal(t, "# Initial Content", retrieved.Markdown)  // Unchanged
+}
+
+func TestUpsert_InvalidName(t *testing.T) {
+	client, cleanup := setupTestValkey(t)
+	defer cleanup()
+
+	service := NewService(client)
+
+	// Try to upsert with invalid name
+	ruleset := &Ruleset{
+		Name:        "Invalid-Name",
+		Description: "Description",
+		Markdown:    "# Content",
+	}
+
+	updates := &Update{}
+
+	err := service.Upsert(ruleset, updates)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "snake_case")
+}

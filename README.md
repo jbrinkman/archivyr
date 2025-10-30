@@ -157,28 +157,40 @@ Archivyr uses stdio transport and works with any MCP-compatible client. See [exa
 
 ## Usage Examples
 
-### Creating a Ruleset
+### Creating a New Ruleset
 
-Use the `create_ruleset` tool in your AI editor:
+Use the `upsert_ruleset` tool in your AI editor to create a new ruleset (all fields required):
 
-```
+```text
 Create a new ruleset named "python_style_guide" with:
 - Description: "Python coding standards for team projects"
 - Tags: ["python", "style", "pep8"]
 - Content: [your markdown content]
 ```
 
+The tool will automatically detect that this is a new ruleset and create it.
+
+### Updating an Existing Ruleset
+
+Use the `upsert_ruleset` tool to update an existing ruleset (only provide fields to change):
+
+```text
+Update the ruleset "python_style_guide" with new description: "Updated Python standards"
+```
+
+The tool will automatically detect that the ruleset exists and update only the provided fields.
+
 ### Retrieving a Ruleset
 
 Rulesets are exposed as MCP resources. Reference them by URI:
 
-```
+```text
 ruleset://python_style_guide
 ```
 
 Or use the `get_ruleset` tool:
 
-```
+```text
 Get the ruleset named "python_style_guide"
 ```
 
@@ -186,7 +198,7 @@ Get the ruleset named "python_style_guide"
 
 Use the `search_rulesets` tool with glob patterns:
 
-```
+```text
 Search for rulesets matching "*python*"
 Search for rulesets matching "style_*"
 ```
@@ -195,31 +207,22 @@ Search for rulesets matching "style_*"
 
 Use the `list_rulesets` tool:
 
-```
+```text
 List all available rulesets
-```
-
-### Updating a Ruleset
-
-Use the `update_ruleset` tool:
-
-```
-Update the ruleset "python_style_guide" with new description: "Updated Python standards"
 ```
 
 ### Deleting a Ruleset
 
 Use the `delete_ruleset` tool:
 
-```
+```text
 Delete the ruleset named "old_ruleset"
 ```
 
 ## Available MCP Tools
 
-- `create_ruleset`: Create a new ruleset with metadata and content
+- `upsert_ruleset`: Create a new ruleset or update an existing one (automatically detects which operation to perform)
 - `get_ruleset`: Retrieve a ruleset by exact name
-- `update_ruleset`: Update an existing ruleset
 - `delete_ruleset`: Delete a ruleset by name
 - `list_rulesets`: List all available rulesets
 - `search_rulesets`: Search rulesets by name pattern

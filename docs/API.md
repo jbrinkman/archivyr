@@ -82,20 +82,26 @@ Retrieve a ruleset by its exact name using a URI.
 
 Tools provide CRUD operations for managing rulesets.
 
-### create_ruleset
+### upsert_ruleset
 
-Create a new ruleset with metadata and content.
+Create a new ruleset or update an existing one. This tool automatically detects whether the ruleset exists and performs the appropriate operation.
+
+**For new rulesets**: All fields (name, description, markdown) are required.
+
+**For existing rulesets**: Only name is required; other fields are optional and will update only the provided fields.
 
 #### Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `name` | string | Yes | Snake_case ruleset name (e.g., `python_style_guide`) |
-| `description` | string | Yes | Brief description of the ruleset |
-| `markdown` | string | Yes | Ruleset content in markdown format |
-| `tags` | array of strings | No | Categorization tags (default: empty array) |
+| `description` | string | Conditional | Brief description of the ruleset (required for new rulesets, optional for updates) |
+| `markdown` | string | Conditional | Ruleset content in markdown format (required for new rulesets, optional for updates) |
+| `tags` | array of strings | No | Categorization tags (default: empty array for new rulesets) |
 
-#### Request Example
+#### Request Example (Creating a New Ruleset)
+
+When creating a new ruleset, all fields must be provided:
 
 ```json
 {
@@ -103,12 +109,31 @@ Create a new ruleset with metadata and content.
   "id": 2,
   "method": "tools/call",
   "params": {
-    "name": "create_ruleset",
+    "name": "upsert_ruleset",
     "arguments": {
       "name": "python_style_guide",
       "description": "Python coding style guidelines for team projects",
       "tags": ["python", "style", "pep8"],
       "markdown": "# Python Style Guide\n\n## Naming Conventions\n\n- Use snake_case for functions and variables\n- Use PascalCase for classes\n\n## Imports\n\n- Group imports: standard library, third-party, local\n- Use absolute imports when possible"
+    }
+  }
+}
+```
+
+#### Request Example (Updating an Existing Ruleset)
+
+When updating an existing ruleset, only provide the fields you want to change:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "upsert_ruleset",
+    "arguments": {
+      "name": "python_style_guide",
+      "description": "Updated Python coding style guidelines with PEP 8 compliance"
     }
   }
 }
@@ -124,14 +149,14 @@ Create a new ruleset with metadata and content.
     "content": [
       {
         "type": "text",
-        "text": "Successfully created ruleset 'python_style_guide'"
+        "text": "Successfully upserted ruleset 'python_style_guide'"
       }
     ]
   }
 }
 ```
 
-#### Error Response (Duplicate Name)
+#### Error Response (Missing Required Fields for New Ruleset)
 
 ```json
 {
@@ -141,7 +166,7 @@ Create a new ruleset with metadata and content.
     "content": [
       {
         "type": "text",
-        "text": "failed to create ruleset: ruleset 'python_style_guide' already exists. Please choose a different name. Existing rulesets: [python_style_guide, go_conventions, javascript_rules]"
+        "text": "failed to upsert ruleset: description is required for new rulesets"
       }
     ],
     "isError": true
@@ -159,13 +184,29 @@ Create a new ruleset with metadata and content.
     "content": [
       {
         "type": "text",
-        "text": "failed to create ruleset: invalid ruleset name 'Python-Style': must use snake_case (lowercase letters, numbers, and underscores only)"
+        "text": "failed to upsert ruleset: invalid ruleset name 'Python-Style': must use snake_case (lowercase letters, numbers, and underscores only)"
       }
     ],
     "isError": true
   }
 }
 ```
+
+#### Behavior Details
+
+The tool automatically detects whether a ruleset exists:
+
+1. **If the ruleset does NOT exist** (Create):
+   - All fields (name, description, markdown) must be provided
+   - Sets `created_at` and `last_modified` timestamps to current time
+   - Returns error if description or markdown is missing
+
+2. **If the ruleset DOES exist** (Update):
+   - Only name is required
+   - Only provided fields are updated
+   - Preserves `created_at` timestamp
+   - Updates `last_modified` timestamp to current time
+   - Unprovided fields remain unchanged
 
 ---
 
@@ -223,95 +264,6 @@ Retrieve a ruleset by its exact name.
       {
         "type": "text",
         "text": "failed to retrieve ruleset: ruleset 'nonexistent' not found"
-      }
-    ],
-    "isError": true
-  }
-}
-```
-
----
-
-### update_ruleset
-
-Update an existing ruleset. Only provided fields will be updated.
-
-#### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `name` | string | Yes | Ruleset name to update |
-| `description` | string | No | New description |
-| `tags` | array of strings | No | New tags (replaces existing tags) |
-| `markdown` | string | No | New content |
-
-**Note**: The `last_modified` timestamp is automatically updated. The `created_at` timestamp is preserved.
-
-#### Request Example (Partial Update)
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 4,
-  "method": "tools/call",
-  "params": {
-    "name": "update_ruleset",
-    "arguments": {
-      "name": "python_style_guide",
-      "description": "Updated Python coding style guidelines with PEP 8 compliance",
-      "tags": ["python", "style", "pep8", "updated"]
-    }
-  }
-}
-```
-
-#### Request Example (Full Update)
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 4,
-  "method": "tools/call",
-  "params": {
-    "name": "update_ruleset",
-    "arguments": {
-      "name": "python_style_guide",
-      "description": "Comprehensive Python style guide",
-      "tags": ["python", "style", "pep8", "formatting"],
-      "markdown": "# Python Style Guide\n\n## Updated Content\n\nNew guidelines here..."
-    }
-  }
-}
-```
-
-#### Success Response
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 4,
-  "result": {
-    "content": [
-      {
-        "type": "text",
-        "text": "Successfully updated ruleset 'python_style_guide'"
-      }
-    ]
-  }
-}
-```
-
-#### Error Response (Not Found)
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 4,
-  "result": {
-    "content": [
-      {
-        "type": "text",
-        "text": "failed to update ruleset: ruleset 'nonexistent' not found"
       }
     ],
     "isError": true
@@ -701,13 +653,13 @@ Fields:
 ### Complete CRUD Workflow
 
 ```json
-// 1. Create a ruleset
+// 1. Create a new ruleset using upsert
 {
   "jsonrpc": "2.0",
   "id": 1,
   "method": "tools/call",
   "params": {
-    "name": "create_ruleset",
+    "name": "upsert_ruleset",
     "arguments": {
       "name": "api_design",
       "description": "RESTful API design principles",
@@ -738,13 +690,13 @@ Fields:
   }
 }
 
-// 4. Update the ruleset
+// 4. Update the ruleset using upsert (only provide fields to change)
 {
   "jsonrpc": "2.0",
   "id": 4,
   "method": "tools/call",
   "params": {
-    "name": "update_ruleset",
+    "name": "upsert_ruleset",
     "arguments": {
       "name": "api_design",
       "description": "RESTful API design principles and best practices",
@@ -857,15 +809,15 @@ Example configuration for Claude Desktop or similar MCP clients:
 
 ### Common Issues
 
-#### "Ruleset already exists"
+#### "Description is required for new rulesets"
 
-**Cause**: Attempting to create a ruleset with a duplicate name
+**Cause**: Attempting to create a new ruleset without providing a description
 
 **Solution**:
 
-1. Use `list_rulesets` to see existing names
-2. Choose a different name
-3. Or use `update_ruleset` to modify the existing ruleset
+1. Provide all required fields (name, description, markdown) when creating a new ruleset
+2. Use `upsert_ruleset` with all required fields for creation
+3. For updates, only name is required
 
 #### "Ruleset not found"
 

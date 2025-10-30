@@ -6,6 +6,7 @@ type ServiceInterface interface {
 	Create(rs *Ruleset) error
 	Get(name string) (*Ruleset, error)
 	Update(name string, updates *Update) error
+	Upsert(rs *Ruleset, updates *Update) error
 	Delete(name string) error
 	List() ([]*Ruleset, error)
 	Search(pattern string) ([]*Ruleset, error)

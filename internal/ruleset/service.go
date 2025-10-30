@@ -323,6 +323,36 @@ func (s *Service) Update(name string, updates *Update) error {
 	return nil
 }
 
+// Upsert creates a new ruleset or updates an existing one
+// For new rulesets, all fields in rs must be provided (name, description, markdown)
+// For existing rulesets, only fields in updates that are non-nil will be updated
+func (s *Service) Upsert(rs *Ruleset, updates *Update) error {
+	// Validate ruleset name
+	if err := util.ValidateRulesetName(rs.Name); err != nil {
+		return err
+	}
+
+	// Check if ruleset exists
+	exists, err := s.Exists(rs.Name)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		// Create new ruleset - all fields must be provided
+		if rs.Description == "" {
+			return fmt.Errorf("description is required for new rulesets")
+		}
+		if rs.Markdown == "" {
+			return fmt.Errorf("markdown content is required for new rulesets")
+		}
+		return s.Create(rs)
+	}
+
+	// Update existing ruleset
+	return s.Update(rs.Name, updates)
+}
+
 // Delete removes a ruleset from Valkey by name
 func (s *Service) Delete(name string) error {
 	// Validate ruleset name

@@ -138,14 +138,14 @@ last_modified: %s
 
 // RegisterTools registers all CRUD tools with the MCP server
 func (h *Handler) RegisterTools(s *server.MCPServer) {
-	// Register create_ruleset tool
-	createTool := mcp.NewTool("create_ruleset",
-		mcp.WithDescription("Create a new ruleset with metadata and content"),
+	// Register upsert_ruleset tool (replaces create_ruleset and update_ruleset)
+	upsertTool := mcp.NewTool("upsert_ruleset",
+		mcp.WithDescription("Create a new ruleset or update an existing one. For new rulesets, all fields are required. For existing rulesets, only name is required and other fields are optional updates."),
 		mcp.WithString("name", mcp.Required(), mcp.Description("Snake_case ruleset name")),
-		mcp.WithString("description", mcp.Required(), mcp.Description("Brief description of the ruleset")),
-		mcp.WithString("markdown", mcp.Required(), mcp.Description("Ruleset content in markdown format")),
+		mcp.WithString("description", mcp.Description("Brief description of the ruleset (required for new rulesets)")),
+		mcp.WithString("markdown", mcp.Description("Ruleset content in markdown format (required for new rulesets)")),
 	)
-	s.AddTool(createTool, h.handleCreateRuleset)
+	s.AddTool(upsertTool, h.handleUpsertRuleset)
 
 	// Register get_ruleset tool
 	getTool := mcp.NewTool("get_ruleset",
@@ -153,15 +153,6 @@ func (h *Handler) RegisterTools(s *server.MCPServer) {
 		mcp.WithString("name", mcp.Required(), mcp.Description("Exact ruleset name")),
 	)
 	s.AddTool(getTool, h.handleGetRuleset)
-
-	// Register update_ruleset tool
-	updateTool := mcp.NewTool("update_ruleset",
-		mcp.WithDescription("Update an existing ruleset"),
-		mcp.WithString("name", mcp.Required(), mcp.Description("Ruleset name to update")),
-		mcp.WithString("description", mcp.Description("New description (optional)")),
-		mcp.WithString("markdown", mcp.Description("New content (optional)")),
-	)
-	s.AddTool(updateTool, h.handleUpdateRuleset)
 
 	// Register delete_ruleset tool
 	deleteTool := mcp.NewTool("delete_ruleset",
@@ -184,12 +175,79 @@ func (h *Handler) RegisterTools(s *server.MCPServer) {
 	s.AddTool(searchTool, h.handleSearchRulesets)
 }
 
+// HandleUpsertRuleset handles the upsert_ruleset tool invocation (exported for testing)
+func (h *Handler) HandleUpsertRuleset(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return h.handleUpsertRuleset(ctx, req)
+}
+
+// handleUpsertRuleset handles the upsert_ruleset tool invocation
+func (h *Handler) handleUpsertRuleset(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	// Extract required parameter
+	name, err := req.RequireString("name")
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("missing required parameter 'name': %v", err)), nil
+	}
+
+	// Extract optional parameters
+	args := req.GetArguments()
+
+	// Build ruleset struct for potential creation
+	rs := &ruleset.Ruleset{
+		Name: name,
+	}
+
+	// Build update struct for potential update
+	updates := &ruleset.Update{}
+
+	if description, ok := args["description"].(string); ok {
+		rs.Description = description
+		updates.Description = &description
+	}
+
+	if markdown, ok := args["markdown"].(string); ok {
+		rs.Markdown = markdown
+		updates.Markdown = &markdown
+	}
+
+	// Extract optional tags parameter
+	if tagsParam, ok := args["tags"]; ok {
+		if tagsList, ok := tagsParam.([]interface{}); ok {
+			tags := make([]string, 0, len(tagsList))
+			for _, tag := range tagsList {
+				if tagStr, ok := tag.(string); ok {
+					tags = append(tags, tagStr)
+				}
+			}
+			rs.Tags = tags
+			updates.Tags = &tags
+		}
+	} else {
+		rs.Tags = []string{}
+	}
+
+	// Perform upsert
+	err = h.rulesetService.Upsert(rs, updates)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("failed to upsert ruleset: %v", err)), nil
+	}
+
+	// Check if it was a create or update to provide appropriate message
+	exists, _ := h.rulesetService.Exists(name)
+	if exists {
+		return mcp.NewToolResultText(fmt.Sprintf("Successfully upserted ruleset '%s'", name)), nil
+	}
+
+	return mcp.NewToolResultText(fmt.Sprintf("Successfully upserted ruleset '%s'", name)), nil
+}
+
 // HandleCreateRuleset handles the create_ruleset tool invocation (exported for testing)
+// Deprecated: Use HandleUpsertRuleset instead
 func (h *Handler) HandleCreateRuleset(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return h.handleCreateRuleset(ctx, req)
 }
 
 // handleCreateRuleset handles the create_ruleset tool invocation
+// Deprecated: Use handleUpsertRuleset instead
 func (h *Handler) handleCreateRuleset(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	// Extract required parameters
 	name, err := req.RequireString("name")

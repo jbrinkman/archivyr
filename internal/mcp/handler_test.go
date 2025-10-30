@@ -1,9 +1,11 @@
 package mcp
 
 import (
+	"context"
 	"testing"
 
 	"github.com/jbrinkman/archivyr/internal/ruleset"
+	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -31,6 +33,11 @@ func (m *MockRulesetService) Get(name string) (*ruleset.Ruleset, error) {
 
 func (m *MockRulesetService) Update(name string, updates *ruleset.Update) error {
 	args := m.Called(name, updates)
+	return args.Error(0)
+}
+
+func (m *MockRulesetService) Upsert(rs *ruleset.Ruleset, updates *ruleset.Update) error {
+	args := m.Called(rs, updates)
 	return args.Error(0)
 }
 
@@ -157,4 +164,107 @@ func TestStart(t *testing.T) {
 	// 1. It's a blocking call that serves stdio
 	// 2. It requires actual stdin/stdout for MCP protocol communication
 	// Full testing of Start() is done in integration tests
+}
+
+// Test HandleUpsertRuleset for creating a new ruleset
+func TestHandleUpsertRuleset_Create(t *testing.T) {
+	mockService := new(MockRulesetService)
+	handler := NewHandler(mockService)
+
+	// Mock the Upsert call to succeed
+	mockService.On("Upsert", mock.AnythingOfType("*ruleset.Ruleset"), mock.AnythingOfType("*ruleset.Update")).Return(nil)
+	mockService.On("Exists", "new_ruleset").Return(true, nil)
+
+	// Create a mock request
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = map[string]interface{}{
+		"name":        "new_ruleset",
+		"description": "New ruleset description",
+		"markdown":    "# New Content",
+		"tags":        []interface{}{"tag1", "tag2"},
+	}
+
+	// Call the handler
+	result, err := handler.HandleUpsertRuleset(context.TODO(), req)
+
+	// Verify
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "Successfully upserted ruleset 'new_ruleset'")
+	mockService.AssertExpectations(t)
+}
+
+// Test HandleUpsertRuleset for updating an existing ruleset
+func TestHandleUpsertRuleset_Update(t *testing.T) {
+	mockService := new(MockRulesetService)
+	handler := NewHandler(mockService)
+
+	// Mock the Upsert call to succeed
+	mockService.On("Upsert", mock.AnythingOfType("*ruleset.Ruleset"), mock.AnythingOfType("*ruleset.Update")).Return(nil)
+	mockService.On("Exists", "existing_ruleset").Return(true, nil)
+
+	// Create a mock request with only partial updates
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = map[string]interface{}{
+		"name":        "existing_ruleset",
+		"description": "Updated description",
+	}
+
+	// Call the handler
+	result, err := handler.HandleUpsertRuleset(context.TODO(), req)
+
+	// Verify
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "Successfully upserted ruleset 'existing_ruleset'")
+	mockService.AssertExpectations(t)
+}
+
+// Test HandleUpsertRuleset with missing name
+func TestHandleUpsertRuleset_MissingName(t *testing.T) {
+	mockService := new(MockRulesetService)
+	handler := NewHandler(mockService)
+
+	// Create a mock request without name
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = map[string]interface{}{
+		"description": "Description",
+		"markdown":    "# Content",
+	}
+
+	// Call the handler
+	result, err := handler.HandleUpsertRuleset(context.TODO(), req)
+
+	// Verify
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.True(t, result.IsError)
+	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "missing required parameter 'name'")
+}
+
+// Test HandleUpsertRuleset with service error
+func TestHandleUpsertRuleset_ServiceError(t *testing.T) {
+	mockService := new(MockRulesetService)
+	handler := NewHandler(mockService)
+
+	// Mock the Upsert call to fail
+	mockService.On("Upsert", mock.AnythingOfType("*ruleset.Ruleset"), mock.AnythingOfType("*ruleset.Update")).Return(assert.AnError)
+
+	// Create a mock request
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = map[string]interface{}{
+		"name":        "test_ruleset",
+		"description": "Description",
+		"markdown":    "# Content",
+	}
+
+	// Call the handler
+	result, err := handler.HandleUpsertRuleset(context.TODO(), req)
+
+	// Verify
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.True(t, result.IsError)
+	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "failed to upsert ruleset")
+	mockService.AssertExpectations(t)
 }
