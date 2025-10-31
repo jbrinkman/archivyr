@@ -6,6 +6,7 @@ import (
 
 	"github.com/jbrinkman/archivyr/internal/ruleset"
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -144,11 +145,36 @@ func TestRegisterTools(t *testing.T) {
 	mockService := new(MockRulesetService)
 	handler := NewHandler(mockService)
 
-	// This test just ensures RegisterTools can be called without panicking
-	// Full integration testing would require a real MCP server
+	// Create a real MCP server for testing registration
+	s := server.NewMCPServer(
+		"Test Server",
+		"1.0.0",
+		server.WithToolCapabilities(true),
+		server.WithResourceCapabilities(true, true),
+	)
+
+	// This test ensures RegisterTools can be called without panicking
 	assert.NotPanics(t, func() {
-		// We can't easily test this without a real server, but we can ensure the method exists
-		assert.NotNil(t, handler.RegisterTools)
+		handler.RegisterTools(s)
+	})
+}
+
+// Test RegisterResources doesn't panic
+func TestRegisterResources(t *testing.T) {
+	mockService := new(MockRulesetService)
+	handler := NewHandler(mockService)
+
+	// Create a real MCP server for testing registration
+	s := server.NewMCPServer(
+		"Test Server",
+		"1.0.0",
+		server.WithToolCapabilities(true),
+		server.WithResourceCapabilities(true, true),
+	)
+
+	// This test ensures RegisterResources can be called without panicking
+	assert.NotPanics(t, func() {
+		handler.RegisterResources(s)
 	})
 }
 
@@ -266,5 +292,316 @@ func TestHandleUpsertRuleset_ServiceError(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.True(t, result.IsError)
 	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "failed to upsert ruleset")
+	mockService.AssertExpectations(t)
+}
+
+// Test HandleGetRuleset success
+func TestHandleGetRuleset_Success(t *testing.T) {
+	mockService := new(MockRulesetService)
+	handler := NewHandler(mockService)
+
+	rs := &ruleset.Ruleset{
+		Name:        "test_ruleset",
+		Description: "Test description",
+		Tags:        []string{"tag1"},
+		Markdown:    "# Test",
+	}
+
+	mockService.On("Get", "test_ruleset").Return(rs, nil)
+
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = map[string]interface{}{
+		"name": "test_ruleset",
+	}
+
+	result, err := handler.HandleGetRuleset(context.TODO(), req)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.False(t, result.IsError)
+	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "test_ruleset")
+	mockService.AssertExpectations(t)
+}
+
+// Test HandleGetRuleset with missing name
+func TestHandleGetRuleset_MissingName(t *testing.T) {
+	mockService := new(MockRulesetService)
+	handler := NewHandler(mockService)
+
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = map[string]interface{}{}
+
+	result, err := handler.HandleGetRuleset(context.TODO(), req)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.True(t, result.IsError)
+	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "missing required parameter 'name'")
+}
+
+// Test HandleGetRuleset with service error
+func TestHandleGetRuleset_ServiceError(t *testing.T) {
+	mockService := new(MockRulesetService)
+	handler := NewHandler(mockService)
+
+	mockService.On("Get", "test_ruleset").Return(nil, assert.AnError)
+
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = map[string]interface{}{
+		"name": "test_ruleset",
+	}
+
+	result, err := handler.HandleGetRuleset(context.TODO(), req)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.True(t, result.IsError)
+	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "failed to retrieve ruleset")
+	mockService.AssertExpectations(t)
+}
+
+// Test HandleDeleteRuleset success
+func TestHandleDeleteRuleset_Success(t *testing.T) {
+	mockService := new(MockRulesetService)
+	handler := NewHandler(mockService)
+
+	mockService.On("Delete", "test_ruleset").Return(nil)
+
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = map[string]interface{}{
+		"name": "test_ruleset",
+	}
+
+	result, err := handler.HandleDeleteRuleset(context.TODO(), req)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.False(t, result.IsError)
+	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "Successfully deleted ruleset 'test_ruleset'")
+	mockService.AssertExpectations(t)
+}
+
+// Test HandleDeleteRuleset with missing name
+func TestHandleDeleteRuleset_MissingName(t *testing.T) {
+	mockService := new(MockRulesetService)
+	handler := NewHandler(mockService)
+
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = map[string]interface{}{}
+
+	result, err := handler.HandleDeleteRuleset(context.TODO(), req)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.True(t, result.IsError)
+	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "missing required parameter 'name'")
+}
+
+// Test HandleDeleteRuleset with service error
+func TestHandleDeleteRuleset_ServiceError(t *testing.T) {
+	mockService := new(MockRulesetService)
+	handler := NewHandler(mockService)
+
+	mockService.On("Delete", "test_ruleset").Return(assert.AnError)
+
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = map[string]interface{}{
+		"name": "test_ruleset",
+	}
+
+	result, err := handler.HandleDeleteRuleset(context.TODO(), req)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.True(t, result.IsError)
+	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "failed to delete ruleset")
+	mockService.AssertExpectations(t)
+}
+
+// Test HandleSearchRulesets success with pattern
+func TestHandleSearchRulesets_WithPattern(t *testing.T) {
+	mockService := new(MockRulesetService)
+	handler := NewHandler(mockService)
+
+	rulesets := []*ruleset.Ruleset{
+		{
+			Name:        "python_style",
+			Description: "Python style guide",
+			Tags:        []string{"python"},
+			Markdown:    "# Python",
+		},
+	}
+
+	mockService.On("Search", "*python*").Return(rulesets, nil)
+
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = map[string]interface{}{
+		"pattern": "*python*",
+	}
+
+	result, err := handler.HandleSearchRulesets(context.TODO(), req)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.False(t, result.IsError)
+	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "python_style")
+	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "Found 1 ruleset(s)")
+	mockService.AssertExpectations(t)
+}
+
+// Test HandleSearchRulesets with empty pattern (defaults to *)
+func TestHandleSearchRulesets_EmptyPattern(t *testing.T) {
+	mockService := new(MockRulesetService)
+	handler := NewHandler(mockService)
+
+	rulesets := []*ruleset.Ruleset{
+		{
+			Name:        "test_ruleset",
+			Description: "Test",
+			Tags:        []string{},
+			Markdown:    "# Test",
+		},
+	}
+
+	mockService.On("Search", "*").Return(rulesets, nil)
+
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = map[string]interface{}{
+		"pattern": "",
+	}
+
+	result, err := handler.HandleSearchRulesets(context.TODO(), req)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.False(t, result.IsError)
+	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "test_ruleset")
+	mockService.AssertExpectations(t)
+}
+
+// Test HandleSearchRulesets with no pattern (defaults to *)
+func TestHandleSearchRulesets_NoPattern(t *testing.T) {
+	mockService := new(MockRulesetService)
+	handler := NewHandler(mockService)
+
+	rulesets := []*ruleset.Ruleset{
+		{
+			Name:        "test_ruleset",
+			Description: "Test",
+			Tags:        []string{},
+			Markdown:    "# Test",
+		},
+	}
+
+	mockService.On("Search", "*").Return(rulesets, nil)
+
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = map[string]interface{}{}
+
+	result, err := handler.HandleSearchRulesets(context.TODO(), req)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.False(t, result.IsError)
+	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "test_ruleset")
+	mockService.AssertExpectations(t)
+}
+
+// Test HandleSearchRulesets with no results
+func TestHandleSearchRulesets_NoResults(t *testing.T) {
+	mockService := new(MockRulesetService)
+	handler := NewHandler(mockService)
+
+	mockService.On("Search", "*nonexistent*").Return([]*ruleset.Ruleset{}, nil)
+
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = map[string]interface{}{
+		"pattern": "*nonexistent*",
+	}
+
+	result, err := handler.HandleSearchRulesets(context.TODO(), req)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.False(t, result.IsError)
+	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "No rulesets found matching pattern")
+	mockService.AssertExpectations(t)
+}
+
+// Test HandleSearchRulesets with service error
+func TestHandleSearchRulesets_ServiceError(t *testing.T) {
+	mockService := new(MockRulesetService)
+	handler := NewHandler(mockService)
+
+	mockService.On("Search", "*").Return(nil, assert.AnError)
+
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = map[string]interface{}{}
+
+	result, err := handler.HandleSearchRulesets(context.TODO(), req)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.True(t, result.IsError)
+	assert.Contains(t, result.Content[0].(mcp.TextContent).Text, "failed to search rulesets")
+	mockService.AssertExpectations(t)
+}
+
+// Test HandleResourceRead success
+func TestHandleResourceRead_Success(t *testing.T) {
+	mockService := new(MockRulesetService)
+	handler := NewHandler(mockService)
+
+	rs := &ruleset.Ruleset{
+		Name:        "test_ruleset",
+		Description: "Test description",
+		Tags:        []string{"tag1"},
+		Markdown:    "# Test",
+	}
+
+	mockService.On("Get", "test_ruleset").Return(rs, nil)
+
+	req := mcp.ReadResourceRequest{}
+	req.Params.URI = "ruleset://test_ruleset"
+
+	result, err := handler.HandleResourceRead(context.TODO(), req)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Len(t, result, 1)
+	assert.Contains(t, result[0].(mcp.TextResourceContents).Text, "test_ruleset")
+	mockService.AssertExpectations(t)
+}
+
+// Test HandleResourceRead with invalid URI
+func TestHandleResourceRead_InvalidURI(t *testing.T) {
+	mockService := new(MockRulesetService)
+	handler := NewHandler(mockService)
+
+	req := mcp.ReadResourceRequest{}
+	req.Params.URI = "invalid"
+
+	result, err := handler.HandleResourceRead(context.TODO(), req)
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "invalid URI format")
+}
+
+// Test HandleResourceRead with service error
+func TestHandleResourceRead_ServiceError(t *testing.T) {
+	mockService := new(MockRulesetService)
+	handler := NewHandler(mockService)
+
+	mockService.On("Get", "test_ruleset").Return(nil, assert.AnError)
+
+	req := mcp.ReadResourceRequest{}
+	req.Params.URI = "ruleset://test_ruleset"
+
+	result, err := handler.HandleResourceRead(context.TODO(), req)
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "failed to retrieve ruleset")
 	mockService.AssertExpectations(t)
 }

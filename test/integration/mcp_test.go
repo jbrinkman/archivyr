@@ -175,7 +175,7 @@ func TestMCPIntegration_ToolInvocations(t *testing.T) {
 		// Create update request
 		req := mcplib.CallToolRequest{
 			Params: mcplib.CallToolParams{
-				Name: "update_ruleset",
+				Name: "upsert_ruleset",
 				Arguments: map[string]interface{}{
 					"name":        "test_update_ruleset",
 					"description": "Updated description",
@@ -186,11 +186,11 @@ func TestMCPIntegration_ToolInvocations(t *testing.T) {
 		}
 
 		// Invoke tool handler
-		result, err := handler.HandleUpdateRuleset(ctx, req)
+		result, err := handler.HandleUpsertRuleset(ctx, req)
 		require.NoError(t, err)
 		assert.NotNil(t, result)
 		assert.False(t, result.IsError)
-		assert.Contains(t, result.Content[0].(mcplib.TextContent).Text, "Successfully updated")
+		assert.Contains(t, result.Content[0].(mcplib.TextContent).Text, "Successfully upserted")
 
 		// Verify update
 		updated, err := service.Get("test_update_ruleset")
@@ -214,7 +214,7 @@ func TestMCPIntegration_ToolInvocations(t *testing.T) {
 		// Update only description
 		req := mcplib.CallToolRequest{
 			Params: mcplib.CallToolParams{
-				Name: "update_ruleset",
+				Name: "upsert_ruleset",
 				Arguments: map[string]interface{}{
 					"name":        "test_partial_update",
 					"description": "Only description updated",
@@ -222,7 +222,7 @@ func TestMCPIntegration_ToolInvocations(t *testing.T) {
 			},
 		}
 
-		result, err := handler.HandleUpdateRuleset(ctx, req)
+		result, err := handler.HandleUpsertRuleset(ctx, req)
 		require.NoError(t, err)
 		assert.NotNil(t, result)
 		assert.False(t, result.IsError)
@@ -281,16 +281,16 @@ func TestMCPIntegration_ToolInvocations(t *testing.T) {
 			require.NoError(t, err)
 		}
 
-		// Create list request
+		// Create list request (using search with no pattern)
 		req := mcplib.CallToolRequest{
 			Params: mcplib.CallToolParams{
-				Name:      "list_rulesets",
+				Name:      "search_rulesets",
 				Arguments: map[string]interface{}{},
 			},
 		}
 
 		// Invoke tool handler
-		result, err := handler.HandleListRulesets(ctx, req)
+		result, err := handler.HandleSearchRulesets(ctx, req)
 		require.NoError(t, err)
 		assert.NotNil(t, result)
 		assert.False(t, result.IsError)
@@ -506,22 +506,22 @@ func TestMCPIntegration_ErrorResponses(t *testing.T) {
 		assert.Contains(t, text, "snake_case")
 	})
 
-	t.Run("ErrorResponse_UpdateNonexistent", func(t *testing.T) {
+	t.Run("ErrorResponse_UpsertMissingRequiredFields", func(t *testing.T) {
+		// Upsert without description or markdown should fail for new rulesets
 		req := mcplib.CallToolRequest{
 			Params: mcplib.CallToolParams{
-				Name: "update_ruleset",
+				Name: "upsert_ruleset",
 				Arguments: map[string]interface{}{
-					"name":        "nonexistent_for_update",
-					"description": "New description",
+					"name": "new_ruleset_missing_fields",
 				},
 			},
 		}
 
-		result, err := handler.HandleUpdateRuleset(ctx, req)
+		result, err := handler.HandleUpsertRuleset(ctx, req)
 		require.NoError(t, err)
 		assert.NotNil(t, result)
 		assert.True(t, result.IsError)
-		assert.Contains(t, result.Content[0].(mcplib.TextContent).Text, "not found")
+		assert.Contains(t, result.Content[0].(mcplib.TextContent).Text, "required")
 	})
 
 	t.Run("ErrorResponse_DeleteNonexistent", func(t *testing.T) {

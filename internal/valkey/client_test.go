@@ -94,3 +94,99 @@ func TestClient_GetContext(t *testing.T) {
 	result := client.GetContext()
 	assert.Equal(t, ctx, result)
 }
+
+// Test NewClient with valid port boundaries
+func TestNewClient_ValidPortBoundaries(t *testing.T) {
+	tests := []struct {
+		name string
+		port string
+	}{
+		{"MinPort", "1"},
+		{"MaxPort", "65535"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// These will fail to connect, but should pass validation
+			_, err := NewClient("invalid-host-for-test", tt.port)
+			// Should get connection error, not validation error
+			if err != nil {
+				assert.NotContains(t, err.Error(), "invalid port number")
+			}
+		})
+	}
+}
+
+// Test Client methods with nil glideClient
+func TestClient_MethodsWithNilClient(t *testing.T) {
+	client := &Client{
+		glideClient: nil,
+		ctx:         context.Background(),
+	}
+
+	t.Run("GetClient", func(t *testing.T) {
+		result := client.GetClient()
+		assert.Nil(t, result)
+	})
+
+	t.Run("GetContext", func(t *testing.T) {
+		result := client.GetContext()
+		assert.NotNil(t, result)
+		assert.Equal(t, context.Background(), result)
+	})
+
+	t.Run("Close", func(t *testing.T) {
+		err := client.Close()
+		assert.NoError(t, err)
+	})
+
+	t.Run("Ping", func(t *testing.T) {
+		err := client.Ping()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "client is not initialized")
+	})
+}
+
+// Test NewClient with various invalid inputs
+func TestNewClient_InvalidInputs(t *testing.T) {
+	tests := []struct {
+		name        string
+		host        string
+		port        string
+		expectedErr string
+	}{
+		{
+			name:        "EmptyHost",
+			host:        "",
+			port:        "6379",
+			expectedErr: "host cannot be empty",
+		},
+		{
+			name:        "EmptyPort",
+			host:        "localhost",
+			port:        "",
+			expectedErr: "port cannot be empty",
+		},
+		{
+			name:        "NonNumericPort",
+			host:        "localhost",
+			port:        "abc",
+			expectedErr: "invalid port number",
+		},
+		{
+			name:        "PortWithSpaces",
+			host:        "localhost",
+			port:        "63 79",
+			expectedErr: "invalid port number",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, err := NewClient(tt.host, tt.port)
+			assert.Error(t, err)
+			assert.Nil(t, client)
+			assert.Contains(t, err.Error(), tt.expectedErr)
+		})
+	}
+}

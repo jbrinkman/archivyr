@@ -44,3 +44,7 @@ temp/
 coverage.txt
 coverage.html
 *.coverprofile
+coverdata/
+
+# Generated reports
+reports/

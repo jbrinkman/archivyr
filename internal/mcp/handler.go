@@ -234,52 +234,6 @@ func (h *Handler) handleUpsertRuleset(_ context.Context, req mcp.CallToolRequest
 	return mcp.NewToolResultText(fmt.Sprintf("Successfully upserted ruleset '%s'", name)), nil
 }
 
-// HandleCreateRuleset handles the create_ruleset tool invocation (exported for testing).
-//
-// Deprecated: Use HandleUpsertRuleset instead.
-func (h *Handler) HandleCreateRuleset(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	return h.handleCreateRuleset(ctx, req)
-}
-
-// handleCreateRuleset handles the create_ruleset tool invocation.
-//
-// Deprecated: Use handleUpsertRuleset instead.
-func (h *Handler) handleCreateRuleset(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	// Extract required parameters
-	name, err := req.RequireString("name")
-	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("missing required parameter 'name': %v", err)), nil
-	}
-
-	description, err := req.RequireString("description")
-	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("missing required parameter 'description': %v", err)), nil
-	}
-
-	markdown, err := req.RequireString("markdown")
-	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("missing required parameter 'markdown': %v", err)), nil
-	}
-
-	// Extract optional tags parameter
-	tags := req.GetStringSlice("tags", []string{})
-
-	// Create ruleset
-	rs := &ruleset.Ruleset{
-		Name:        name,
-		Description: description,
-		Tags:        tags,
-		Markdown:    markdown,
-	}
-
-	err = h.rulesetService.Create(rs)
-	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to create ruleset: %v", err)), nil
-	}
-
-	return mcp.NewToolResultText(fmt.Sprintf("Successfully created ruleset '%s'", name)), nil
-}
-
 // HandleGetRuleset handles the get_ruleset tool invocation (exported for testing)
 func (h *Handler) HandleGetRuleset(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return h.handleGetRuleset(ctx, req)
@@ -304,52 +258,6 @@ func (h *Handler) handleGetRuleset(_ context.Context, req mcp.CallToolRequest) (
 	return mcp.NewToolResultText(content), nil
 }
 
-// HandleUpdateRuleset handles the update_ruleset tool invocation (exported for testing)
-func (h *Handler) HandleUpdateRuleset(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	return h.handleUpdateRuleset(ctx, req)
-}
-
-// handleUpdateRuleset handles the update_ruleset tool invocation
-func (h *Handler) handleUpdateRuleset(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	// Extract required parameter
-	name, err := req.RequireString("name")
-	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("missing required parameter 'name': %v", err)), nil
-	}
-
-	// Build update struct with optional parameters
-	updates := &ruleset.Update{}
-	args := req.GetArguments()
-
-	if description, ok := args["description"].(string); ok {
-		updates.Description = &description
-	}
-
-	if markdown, ok := args["markdown"].(string); ok {
-		updates.Markdown = &markdown
-	}
-
-	if tagsParam, ok := args["tags"]; ok {
-		if tagsList, ok := tagsParam.([]interface{}); ok {
-			tags := make([]string, 0, len(tagsList))
-			for _, tag := range tagsList {
-				if tagStr, ok := tag.(string); ok {
-					tags = append(tags, tagStr)
-				}
-			}
-			updates.Tags = &tags
-		}
-	}
-
-	// Update ruleset
-	err = h.rulesetService.Update(name, updates)
-	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to update ruleset: %v", err)), nil
-	}
-
-	return mcp.NewToolResultText(fmt.Sprintf("Successfully updated ruleset '%s'", name)), nil
-}
-
 // HandleDeleteRuleset handles the delete_ruleset tool invocation (exported for testing)
 func (h *Handler) HandleDeleteRuleset(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return h.handleDeleteRuleset(ctx, req)
@@ -370,38 +278,6 @@ func (h *Handler) handleDeleteRuleset(_ context.Context, req mcp.CallToolRequest
 	}
 
 	return mcp.NewToolResultText(fmt.Sprintf("Successfully deleted ruleset '%s'", name)), nil
-}
-
-// HandleListRulesets handles the list_rulesets tool invocation (exported for testing)
-func (h *Handler) HandleListRulesets(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	return h.handleListRulesets(ctx, req)
-}
-
-// handleListRulesets handles the list_rulesets tool invocation
-func (h *Handler) handleListRulesets(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	// List all rulesets
-	rulesets, err := h.rulesetService.List()
-	if err != nil {
-		return mcp.NewToolResultError(fmt.Sprintf("failed to list rulesets: %v", err)), nil
-	}
-
-	// Format response
-	if len(rulesets) == 0 {
-		return mcp.NewToolResultText("No rulesets found"), nil
-	}
-
-	result := fmt.Sprintf("Found %d ruleset(s):\n\n", len(rulesets))
-	for _, rs := range rulesets {
-		result += fmt.Sprintf("- **%s**: %s\n", rs.Name, rs.Description)
-		if len(rs.Tags) > 0 {
-			result += fmt.Sprintf("  Tags: %v\n", rs.Tags)
-		}
-		result += fmt.Sprintf("  Created: %s, Modified: %s\n\n",
-			rs.CreatedAt.Format("2006-01-02 15:04:05"),
-			rs.LastModified.Format("2006-01-02 15:04:05"))
-	}
-
-	return mcp.NewToolResultText(result), nil
 }
 
 // HandleSearchRulesets handles the search_rulesets tool invocation (exported for testing)

@@ -2,7 +2,9 @@ version: "3"
 
 vars:
   GO_VERSION: "1.24.3"
-  COVERAGE_FILE: coverage.out
+  COVERAGE_FILE: reports/coverage/coverage.out
+  COVERAGE_HTML: reports/coverage/coverage.html
+  TEST_REPORT_DIR: reports/test
   DOCKER_IMAGE: mcp-ruleset-server
   DOCKER_TAG: latest
 
@@ -39,19 +41,28 @@ tasks:
   test:
     desc: Run all tests with race detector and coverage (same as CI)
     cmds:
-      - go test ./... -v -race -coverprofile={{.COVERAGE_FILE}} -covermode=atomic
+      - mkdir -p {{.TEST_REPORT_DIR}} reports/coverage
+      - go test ./... -v -race -coverprofile={{.COVERAGE_FILE}} -covermode=atomic -json > {{.TEST_REPORT_DIR}}/test-results.json
+      - cat {{.TEST_REPORT_DIR}}/test-results.json | go-test-report -o {{.TEST_REPORT_DIR}}/test-report.html
+      - echo "Test report generated at {{.TEST_REPORT_DIR}}/test-report.html"
 
   test:unit:
     desc: Run unit tests only
     cmds:
-      - go test ./internal/... -v -race -cover
+      - mkdir -p {{.TEST_REPORT_DIR}}
+      - go test ./internal/... -v -race -cover -json > {{.TEST_REPORT_DIR}}/unit-test-results.json
+      - cat {{.TEST_REPORT_DIR}}/unit-test-results.json | go-test-report -o {{.TEST_REPORT_DIR}}/unit-test-report.html
+      - echo "Unit test report generated at {{.TEST_REPORT_DIR}}/unit-test-report.html"
 
   test:integration:
     desc: Run integration tests
     cmds:
+      - mkdir -p {{.TEST_REPORT_DIR}}
       - |
         if [ -d "./test/integration" ]; then
-          go test ./test/integration/... -v -race
+          go test ./test/integration/... -v -race -json > {{.TEST_REPORT_DIR}}/integration-test-results.json
+          cat {{.TEST_REPORT_DIR}}/integration-test-results.json | go-test-report -o {{.TEST_REPORT_DIR}}/integration-test-report.html
+          echo "Integration test report generated at {{.TEST_REPORT_DIR}}/integration-test-report.html"
         else
           echo "Integration tests directory not found, skipping..."
         fi
@@ -59,9 +70,12 @@ tasks:
   test:e2e:
     desc: Run end-to-end tests
     cmds:
+      - mkdir -p {{.TEST_REPORT_DIR}}
       - |
         if [ -d "./test/e2e" ]; then
-          go test ./test/e2e/... -v
+          go test ./test/e2e/... -v -json > {{.TEST_REPORT_DIR}}/e2e-test-results.json
+          cat {{.TEST_REPORT_DIR}}/e2e-test-results.json | go-test-report -o {{.TEST_REPORT_DIR}}/e2e-test-report.html
+          echo "E2E test report generated at {{.TEST_REPORT_DIR}}/e2e-test-report.html"
         else
           echo "E2E tests directory not found, skipping..."
         fi
@@ -70,8 +84,36 @@ tasks:
     desc: Run tests and generate coverage report
     cmds:
       - task: test
-      - go tool cover -html={{.COVERAGE_FILE}} -o coverage.html
-      - echo "Coverage report generated at coverage.html"
+      - covreport -i {{.COVERAGE_FILE}} -o {{.COVERAGE_HTML}}
+      - echo "Coverage report generated at {{.COVERAGE_HTML}}"
+
+  test:coverage:combined:
+    desc: Run all tests (unit + integration) and generate combined coverage report
+    cmds:
+      - mkdir -p reports/coverage/data {{.TEST_REPORT_DIR}}
+      - rm -rf reports/coverage/data/*
+      - echo "Running unit tests with coverage..."
+      - go test ./internal/... -v -race -coverprofile=reports/coverage/data/unit.out -covermode=atomic -json > {{.TEST_REPORT_DIR}}/unit-test-results.json
+      - cat {{.TEST_REPORT_DIR}}/unit-test-results.json | go-test-report -o {{.TEST_REPORT_DIR}}/unit-test-report.html
+      - echo "Running integration tests with coverage (instrumenting all internal packages)..."
+      - go test ./test/integration/... -v -race -coverprofile=reports/coverage/data/integration.out -coverpkg=./internal/... -covermode=atomic -json > {{.TEST_REPORT_DIR}}/integration-test-results.json
+      - cat {{.TEST_REPORT_DIR}}/integration-test-results.json | go-test-report -o {{.TEST_REPORT_DIR}}/integration-test-report.html
+      - echo "Note - E2E tests run in Docker containers and cannot capture coverage"
+      - echo "Merging coverage reports..."
+      - |
+        echo "mode: atomic" > {{.COVERAGE_FILE}}
+        tail -q -n +2 reports/coverage/data/*.out >> {{.COVERAGE_FILE}} 2>/dev/null || true
+      - echo "Generating coverage summary..."
+      - go tool cover -func={{.COVERAGE_FILE}} | grep total
+      - echo "Coverage report saved to {{.COVERAGE_FILE}}"
+      - echo "Run 'task test:coverage:html' to generate HTML report"
+
+  test:coverage:html:
+    desc: Generate HTML coverage report from existing coverage data
+    cmds:
+      - mkdir -p reports/coverage
+      - covreport -i {{.COVERAGE_FILE}} -o {{.COVERAGE_HTML}}
+      - echo "Coverage report generated at {{.COVERAGE_HTML}}"
 
   test:quick:
     desc: Run tests without race detector (faster for development)
@@ -150,7 +192,9 @@ tasks:
     desc: Clean build artifacts and test cache
     cmds:
       - rm -rf bin/
-      - rm -f {{.COVERAGE_FILE}} coverage.html
+      - rm -rf reports/
+      - rm -rf coverdata/
+      - rm -f coverage.out coverage.html
       - go clean -testcache
       - docker rm -f mcp-test 2>/dev/null || true
 
@@ -175,6 +219,10 @@ tasks:
       - task: deps
       - echo "Installing golangci-lint..."
       - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+      - echo "Installing covreport..."
+      - go install github.com/cancue/covreport@latest
+      - echo "Installing go-test-report..."
+      - go install github.com/vakenbolt/go-test-report@latest
       - echo "Development environment ready!"
 
   dev:watch:
