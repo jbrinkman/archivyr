@@ -35,6 +35,12 @@ jobs:
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin latest
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
+      - name: Install reporting tools
+        run: |
+          go install github.com/cancue/covreport@latest
+          go install github.com/vakenbolt/go-test-report@latest
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
       - name: Install dependencies
         run: task deps
 

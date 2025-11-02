@@ -43,16 +43,26 @@ tasks:
     cmds:
       - mkdir -p {{.TEST_REPORT_DIR}} reports/coverage
       - go test ./... -v -race -coverprofile={{.COVERAGE_FILE}} -covermode=atomic -json > {{.TEST_REPORT_DIR}}/test-results.json
-      - cat {{.TEST_REPORT_DIR}}/test-results.json | go-test-report -o {{.TEST_REPORT_DIR}}/test-report.html
-      - echo "Test report generated at {{.TEST_REPORT_DIR}}/test-report.html"
+      - |
+        if command -v go-test-report &> /dev/null; then
+          cat {{.TEST_REPORT_DIR}}/test-results.json | go-test-report -o {{.TEST_REPORT_DIR}}/test-report.html
+          echo "Test report generated at {{.TEST_REPORT_DIR}}/test-report.html"
+        else
+          echo "go-test-report not found, skipping HTML report generation"
+        fi
 
   test:unit:
     desc: Run unit tests only
     cmds:
       - mkdir -p {{.TEST_REPORT_DIR}}
       - go test ./internal/... -v -race -cover -json > {{.TEST_REPORT_DIR}}/unit-test-results.json
-      - cat {{.TEST_REPORT_DIR}}/unit-test-results.json | go-test-report -o {{.TEST_REPORT_DIR}}/unit-test-report.html
-      - echo "Unit test report generated at {{.TEST_REPORT_DIR}}/unit-test-report.html"
+      - |
+        if command -v go-test-report &> /dev/null; then
+          cat {{.TEST_REPORT_DIR}}/unit-test-results.json | go-test-report -o {{.TEST_REPORT_DIR}}/unit-test-report.html
+          echo "Unit test report generated at {{.TEST_REPORT_DIR}}/unit-test-report.html"
+        else
+          echo "go-test-report not found, skipping HTML report generation"
+        fi
 
   test:integration:
     desc: Run integration tests
@@ -61,8 +71,12 @@ tasks:
       - |
         if [ -d "./test/integration" ]; then
           go test ./test/integration/... -v -race -json > {{.TEST_REPORT_DIR}}/integration-test-results.json
-          cat {{.TEST_REPORT_DIR}}/integration-test-results.json | go-test-report -o {{.TEST_REPORT_DIR}}/integration-test-report.html
-          echo "Integration test report generated at {{.TEST_REPORT_DIR}}/integration-test-report.html"
+          if command -v go-test-report &> /dev/null; then
+            cat {{.TEST_REPORT_DIR}}/integration-test-results.json | go-test-report -o {{.TEST_REPORT_DIR}}/integration-test-report.html
+            echo "Integration test report generated at {{.TEST_REPORT_DIR}}/integration-test-report.html"
+          else
+            echo "go-test-report not found, skipping HTML report generation"
+          fi
         else
           echo "Integration tests directory not found, skipping..."
         fi
@@ -74,8 +88,12 @@ tasks:
       - |
         if [ -d "./test/e2e" ]; then
           go test ./test/e2e/... -v -json > {{.TEST_REPORT_DIR}}/e2e-test-results.json
-          cat {{.TEST_REPORT_DIR}}/e2e-test-results.json | go-test-report -o {{.TEST_REPORT_DIR}}/e2e-test-report.html
-          echo "E2E test report generated at {{.TEST_REPORT_DIR}}/e2e-test-report.html"
+          if command -v go-test-report &> /dev/null; then
+            cat {{.TEST_REPORT_DIR}}/e2e-test-results.json | go-test-report -o {{.TEST_REPORT_DIR}}/e2e-test-report.html
+            echo "E2E test report generated at {{.TEST_REPORT_DIR}}/e2e-test-report.html"
+          else
+            echo "go-test-report not found, skipping HTML report generation"
+          fi
         else
           echo "E2E tests directory not found, skipping..."
         fi
@@ -84,8 +102,15 @@ tasks:
     desc: Run tests and generate coverage report
     cmds:
       - task: test
-      - covreport -i {{.COVERAGE_FILE}} -o {{.COVERAGE_HTML}}
-      - echo "Coverage report generated at {{.COVERAGE_HTML}}"
+      - |
+        if command -v covreport &> /dev/null; then
+          covreport -i {{.COVERAGE_FILE}} -o {{.COVERAGE_HTML}}
+          echo "Coverage report generated at {{.COVERAGE_HTML}}"
+        else
+          echo "covreport not found, falling back to go tool cover"
+          go tool cover -html={{.COVERAGE_FILE}} -o {{.COVERAGE_HTML}}
+          echo "Coverage report generated at {{.COVERAGE_HTML}}"
+        fi
 
   test:coverage:combined:
     desc: Run all tests (unit + integration) and generate combined coverage report
@@ -94,10 +119,16 @@ tasks:
       - rm -rf reports/coverage/data/*
       - echo "Running unit tests with coverage..."
       - go test ./internal/... -v -race -coverprofile=reports/coverage/data/unit.out -covermode=atomic -json > {{.TEST_REPORT_DIR}}/unit-test-results.json
-      - cat {{.TEST_REPORT_DIR}}/unit-test-results.json | go-test-report -o {{.TEST_REPORT_DIR}}/unit-test-report.html
+      - |
+        if command -v go-test-report &> /dev/null; then
+          cat {{.TEST_REPORT_DIR}}/unit-test-results.json | go-test-report -o {{.TEST_REPORT_DIR}}/unit-test-report.html
+        fi
       - echo "Running integration tests with coverage (instrumenting all internal packages)..."
       - go test ./test/integration/... -v -race -coverprofile=reports/coverage/data/integration.out -coverpkg=./internal/... -covermode=atomic -json > {{.TEST_REPORT_DIR}}/integration-test-results.json
-      - cat {{.TEST_REPORT_DIR}}/integration-test-results.json | go-test-report -o {{.TEST_REPORT_DIR}}/integration-test-report.html
+      - |
+        if command -v go-test-report &> /dev/null; then
+          cat {{.TEST_REPORT_DIR}}/integration-test-results.json | go-test-report -o {{.TEST_REPORT_DIR}}/integration-test-report.html
+        fi
       - echo "Note - E2E tests run in Docker containers and cannot capture coverage"
       - echo "Merging coverage reports..."
       - |
@@ -112,8 +143,15 @@ tasks:
     desc: Generate HTML coverage report from existing coverage data
     cmds:
       - mkdir -p reports/coverage
-      - covreport -i {{.COVERAGE_FILE}} -o {{.COVERAGE_HTML}}
-      - echo "Coverage report generated at {{.COVERAGE_HTML}}"
+      - |
+        if command -v covreport &> /dev/null; then
+          covreport -i {{.COVERAGE_FILE}} -o {{.COVERAGE_HTML}}
+          echo "Coverage report generated at {{.COVERAGE_HTML}}"
+        else
+          echo "covreport not found, falling back to go tool cover"
+          go tool cover -html={{.COVERAGE_FILE}} -o {{.COVERAGE_HTML}}
+          echo "Coverage report generated at {{.COVERAGE_HTML}}"
+        fi
 
   test:quick:
     desc: Run tests without race detector (faster for development)
